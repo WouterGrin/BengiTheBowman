@@ -5,10 +5,11 @@ using UnityEngine;
 public class LevelGenerator : MonoBehaviour
 {
     public List<RoomContainer> rooms = new List<RoomContainer>();
-    public const int WIDTH = 100;
-    public const int HEIGHT = 100;
-    public const float MIN_SPLIT_PERCENTAGE = 0.3f;
+    public const int WIDTH = 60;
+    public const int HEIGHT = 60;
+    public const float MIN_SPLIT_PERCENTAGE = 0.35f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
+    public const float STOP_SPLITTING_CHANCE = 0.33f;
 
     public GameObject[,] tiles;
    
@@ -39,10 +40,8 @@ public class LevelGenerator : MonoBehaviour
     void GenerateRoomContainers()
     {
         RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0);
-        int maxTreeDepth = 3;
+        int maxTreeDepth = 4;
         mainContainer.Split(true, maxTreeDepth, rooms);
-
-        
     }
 
 
@@ -173,13 +172,23 @@ public class LevelGenerator : MonoBehaviour
 
             // recursively create more sub rooms in newly created rooms if maxTreeDepth hasn't been reached yet
             // if this room was split horizontally, split the next rooms vertically (and vice versa)
+            // Somtimes it will randomly stop splitting a room and leave it bigger.
             if (newTreeDepth < maxTreeDepth)
             {
-                l_child.Split(!horizontal, maxTreeDepth, rooms);
-                r_child.Split(!horizontal, maxTreeDepth, rooms);
+                if (Random.Range(0, 1f) > (STOP_SPLITTING_CHANCE * newTreeDepth) + (2 * -STOP_SPLITTING_CHANCE))
+                {
+                    l_child.Split(!horizontal, maxTreeDepth, rooms);
+                    r_child.Split(!horizontal, maxTreeDepth, rooms);
+                }
+                else
+                {
+                    Debug.Log("adding cur room");
+                    rooms.Add(this);
+                }
             }
             else
             {
+                Debug.Log("adding both rooms");
                 rooms.Add(l_child);
                 rooms.Add(r_child);
             }
