@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class LevelGenerator : MonoBehaviour
 {
-
     public GameObject[,] tiles;
     public const int WIDTH = 10;
     public const int HEIGHT = 10;
@@ -15,7 +14,7 @@ public class LevelGenerator : MonoBehaviour
     public GameObject doorPrefab;
     public GameObject keyPrefab;
     GameObject player;
-
+	
 
     void Start()
     {
@@ -98,4 +97,5 @@ public class LevelGenerator : MonoBehaviour
         //doorScript.SetColor(color);
         // doorScript.AdjustSprite(tiles, pos);
     }
+
 }
