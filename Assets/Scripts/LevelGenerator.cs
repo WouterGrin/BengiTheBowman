@@ -4,16 +4,14 @@ using UnityEngine;
 
 public class LevelGenerator : MonoBehaviour
 {
-
-    public GameObject[,] rooms;
-    public const int STARTING_WIDTH = 100;
-    public const int STARTING_HEIGHT = 100;
-    public const float MIN_SPLIT_PERCENTAGE = 0.2f;
+    public List<RoomContainer> rooms = new List<RoomContainer>();
+    public const int WIDTH = 100;
+    public const int HEIGHT = 100;
+    public const float MIN_SPLIT_PERCENTAGE = 0.4f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
 
     public GameObject[,] tiles;
-    public const int WIDTH = 10;
-    public const int HEIGHT = 10;
+   
 
     ObjectContainer objContainer;
     public GameObject groundTile;
@@ -40,32 +38,43 @@ public class LevelGenerator : MonoBehaviour
 
     void GenerateRoomContainers()
     {
-        RoomContainer mainContainer = new RoomContainer(0, 0, STARTING_WIDTH, STARTING_HEIGHT, 0);
+        RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0);
         int maxTreeDepth = 3;
-        mainContainer.Split(true, maxTreeDepth);
+        mainContainer.Split(true, maxTreeDepth, rooms);
+
+        
     }
 
 
     void GenerateLevel()
     {
+
         tiles = new GameObject[WIDTH, HEIGHT];
-        for (int x = 0; x < WIDTH; x++)
+        print("COUNT  " + rooms.Count);
+        for (int i = 0; i < rooms.Count; i++)
         {
-            for (int y = 0; y < HEIGHT; y++)
+            RoomContainer currContainer = rooms[i];
+            for (int x = currContainer.x; x < currContainer.x + currContainer.width; x++)
             {
-                GameObject newTile;
-                float nr = Random.Range(0f, 10f);
-                if (nr < 9f)
+                for (int y = currContainer.y; y < currContainer.y + currContainer.height; y++)
                 {
-                    newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                    GameObject newTile;
+                    if (x != currContainer.x && y != currContainer.y && x != currContainer.width -1 && y != currContainer.height - 1 && tiles[x, y] == null)
+                    {
+                        newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                        
+                    }
+                    else
+                    {
+                        newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                    }
+
+                    tiles[x, y] = newTile;
                 }
-                else
-                {
-                    newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-                }
-                tiles[x, y] = newTile;
             }
         }
+
+        
         AdjustSpritesAndHitboxes();
 
 
@@ -81,7 +90,7 @@ public class LevelGenerator : MonoBehaviour
             for (int y = 0; y < HEIGHT; y++)
             {
                 GameObject currTile = tiles[x, y];
-                if (currTile.tag == "Block")
+                if (currTile != null && currTile.tag == "Block")
                 {
                     WallTile wallScript = currTile.GetComponent<WallTile>();
                     wallScript.player = player;
@@ -110,8 +119,6 @@ public class LevelGenerator : MonoBehaviour
         keyScript.player = player;
         keyScript.SetColor(color);
 
-        //doorScript.SetColor(color);
-        // doorScript.AdjustSprite(tiles, pos);
     }
 
     public class RoomContainer
@@ -138,7 +145,7 @@ public class LevelGenerator : MonoBehaviour
             PrintRoomContainer();
         }
 
-        public void Split(bool horizontal, int maxTreeDepth)
+        public void Split( bool horizontal, int maxTreeDepth, List<RoomContainer> rooms)
         {
             int newTreeDepth = this.treeDepth + 1;
             this.isSplitHorizontally = horizontal;
@@ -169,8 +176,13 @@ public class LevelGenerator : MonoBehaviour
             // if this room was split horizontally, split the next rooms vertically (and vice versa)
             if (newTreeDepth < maxTreeDepth)
             {
-                l_child.Split(!horizontal, maxTreeDepth);
-                r_child.Split(!horizontal, maxTreeDepth);
+                l_child.Split(!horizontal, maxTreeDepth, rooms);
+                r_child.Split(!horizontal, maxTreeDepth, rooms);
+            }
+            else
+            {
+                rooms.Add(l_child);
+                rooms.Add(r_child);
             }
         }
 
@@ -182,8 +194,8 @@ public class LevelGenerator : MonoBehaviour
         // Returns a random point on SplittingLine to split it on.
         public float FindRandomSplit(int splittingLine)
         {
-            float min = MIN_SPLIT_PERCENTAGE * splittingLine;
-            float max = MAX_SPLIT_PERCENTAGE * splittingLine;
+            float min = MIN_SPLIT_PERCENTAGE * (float)splittingLine;
+            float max = MAX_SPLIT_PERCENTAGE * (float)splittingLine;
             float random = Random.Range(min, max);
             return random;
         }
