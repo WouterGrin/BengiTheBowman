@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class LevelGenerator : MonoBehaviour
 {
-    public List<RoomContainer> rooms = new List<RoomContainer>();
+    public List<RoomContainer> roomContainers = new List<RoomContainer>();
+    public List<Room> rooms = new List<Room>();
     public const int WIDTH = 60;
     public const int HEIGHT = 60;
     public const float MIN_SPLIT_PERCENTAGE = 0.35f;
@@ -27,6 +28,7 @@ public class LevelGenerator : MonoBehaviour
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
         player = GameObject.Find("Player");
         GenerateRoomContainers();
+        GenerateRooms();
         GenerateLevel();
     }
 
@@ -41,7 +43,16 @@ public class LevelGenerator : MonoBehaviour
     {
         RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0);
         int maxTreeDepth = 4;
-        mainContainer.Split(true, maxTreeDepth, rooms);
+        mainContainer.Split(true, maxTreeDepth, roomContainers);
+    }
+
+    void GenerateRooms()
+    {
+        foreach (RoomContainer rc in roomContainers)
+        {
+            Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
+            rooms.Add(newRoom);
+        }
     }
 
 
@@ -51,13 +62,13 @@ public class LevelGenerator : MonoBehaviour
         tiles = new GameObject[WIDTH, HEIGHT];
         for (int i = 0; i < rooms.Count; i++)
         {
-            RoomContainer currContainer = rooms[i];
-            for (int x = currContainer.x; x < currContainer.x + currContainer.width; x++)
+            Room currRoom = rooms[i];
+            for (int x = currRoom.x; x < currRoom.x + currRoom.width; x++)
             {
-                for (int y = currContainer.y; y < currContainer.y + currContainer.height; y++)
+                for (int y = currRoom.y; y < currRoom.y + currRoom.height; y++)
                 {
                     GameObject newTile;
-                    if (x != currContainer.x && y != currContainer.y && x != currContainer.x + currContainer.width -1 && y != currContainer.y + currContainer.height - 1 && tiles[x, y] == null)
+                    if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width -1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null)
                     {
                         newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
                         
@@ -71,10 +82,8 @@ public class LevelGenerator : MonoBehaviour
                 }
             }
         }
-
         
         AdjustSpritesAndHitboxes();
-
 
         PlaceDoor(new Vector2(5, 5), Color.red);
         PlaceKey(new Vector2(0, 1), Color.red);
@@ -94,7 +103,6 @@ public class LevelGenerator : MonoBehaviour
                     wallScript.player = player;
                     wallScript.AdjustSpriteAndHitbox(tiles, new Vector2(x,y));
                 }
-
             }
         }
     }
@@ -116,7 +124,6 @@ public class LevelGenerator : MonoBehaviour
         KeyScript keyScript = newKey.GetComponent<KeyScript>();
         keyScript.player = player;
         keyScript.SetColor(color);
-
     }
 
     public class RoomContainer
@@ -143,7 +150,7 @@ public class LevelGenerator : MonoBehaviour
             PrintRoomContainer();
         }
 
-        public void Split( bool horizontal, int maxTreeDepth, List<RoomContainer> rooms)
+        public void Split( bool horizontal, int maxTreeDepth, List<RoomContainer> roomContainers)
         {
             int newTreeDepth = this.treeDepth + 1;
             this.isSplitHorizontally = horizontal;
@@ -177,20 +184,20 @@ public class LevelGenerator : MonoBehaviour
             {
                 if (Random.Range(0, 1f) > (STOP_SPLITTING_CHANCE * newTreeDepth) + (2 * -STOP_SPLITTING_CHANCE))
                 {
-                    l_child.Split(!horizontal, maxTreeDepth, rooms);
-                    r_child.Split(!horizontal, maxTreeDepth, rooms);
+                    l_child.Split(!horizontal, maxTreeDepth, roomContainers);
+                    r_child.Split(!horizontal, maxTreeDepth, roomContainers);
                 }
                 else
                 {
                     Debug.Log("adding cur room");
-                    rooms.Add(this);
+                    roomContainers.Add(this);
                 }
             }
             else
             {
                 Debug.Log("adding both rooms");
-                rooms.Add(l_child);
-                rooms.Add(r_child);
+                roomContainers.Add(l_child);
+                roomContainers.Add(r_child);
             }
         }
 
@@ -214,5 +221,22 @@ public class LevelGenerator : MonoBehaviour
             Debug.Log("x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth);
         }
 
+    }
+
+    public class Room
+    {
+        // (x, y) indicates top left corner
+        public int x;
+        public int y;
+        public int width;
+        public int height;
+
+        public Room(int x, int y, int width, int height)
+        {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
     }
 }
