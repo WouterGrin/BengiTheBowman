@@ -4,13 +4,25 @@ using UnityEngine;
 
 public class LevelGenerator : MonoBehaviour
 {
-
-    public GameObject[,] rooms;
-    public const int STARTING_WIDTH = 100;
-    public const int STARTING_HEIGHT = 100;
-    public const float MIN_SPLIT_PERCENTAGE = 0.2f;
+    public List<RoomContainer> roomContainers = new List<RoomContainer>();
+    public const int WIDTH = 80;
+    public const int HEIGHT = 80;
+    public const float MIN_SPLIT_PERCENTAGE = 0.35f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
+    public const float STOP_SPLITTING_CHANCE = 0.4f;
 
+    public List<Room> rooms = new List<Room>();
+    public const float MIN_ROOM_PADDING = 0.05f;
+    public const float MAX_ROOM_PADDING = 0.2f;
+    public const int MIN_ROOM_WIDTH = 9;
+    public const int MIN_ROOM_HEIGHT = 9;
+
+<<<<<<< HEAD
+=======
+    public GameObject[,] tiles;
+   
+
+>>>>>>> feature/BSPTree
     ObjectContainer objContainer;
     public GameObject groundTile;
     public GameObject wallTile;
@@ -25,6 +37,11 @@ public class LevelGenerator : MonoBehaviour
         player = GameObject.Find("Player");
 		caveGenerator = new CaveGenerator(45);
         GenerateRoomContainers();
+<<<<<<< HEAD
+=======
+        GenerateRooms();
+        GenerateLevel();
+>>>>>>> feature/BSPTree
     }
 
 
@@ -36,12 +53,79 @@ public class LevelGenerator : MonoBehaviour
 
     void GenerateRoomContainers()
     {
-        RoomContainer mainContainer = new RoomContainer(0, 0, STARTING_WIDTH, STARTING_HEIGHT, 0);
-        int maxTreeDepth = 3;
-        mainContainer.Split(true, maxTreeDepth);
+        RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0, roomContainers);
+        int maxTreeDepth = 4;
+        mainContainer.Split(true, maxTreeDepth, roomContainers);
+    }
+
+    void GenerateRooms()
+    {
+        foreach (RoomContainer rc in roomContainers)
+        {
+            if (rc.isLastNode)
+            {
+                Debug.Log("found last node room container");
+                Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
+                rooms.Add(newRoom);
+            }
+        }
     }
 
 
+<<<<<<< HEAD
+=======
+    void GenerateLevel()
+    {
+        tiles = new GameObject[WIDTH, HEIGHT];
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            Room currRoom = rooms[i];
+            for (int x = currRoom.x; x < currRoom.x + currRoom.width; x++)
+            {
+                for (int y = currRoom.y; y < currRoom.y + currRoom.height; y++)
+                {
+                    GameObject newTile;
+                    if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width -1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null)
+                    {
+                        newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                        
+                    }
+                    else
+                    {
+                        newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                    }
+
+                    tiles[x, y] = newTile;
+                }
+            }
+        }
+        
+        AdjustSpritesAndHitboxes();
+
+        PlaceDoor(new Vector2(5, 5), Color.red);
+        PlaceKey(new Vector2(0, 1), Color.red);
+        PlaceKey(new Vector2(0, 5), Color.yellow);
+    }
+
+    void AdjustSpritesAndHitboxes()
+    {
+        for (int x = 0; x < WIDTH; x++)
+        {
+            for (int y = 0; y < HEIGHT; y++)
+            {
+                GameObject currTile = tiles[x, y];
+                if (currTile != null && currTile.tag == "Block")
+                {
+                    WallTile wallScript = currTile.GetComponent<WallTile>();
+                    wallScript.player = player;
+                    wallScript.AdjustSpriteAndHitbox(tiles, new Vector2(x,y));
+                }
+            }
+        }
+    }
+
+
+>>>>>>> feature/BSPTree
     void PlaceDoor(Vector2 pos, Color color)
     {
         GameObject newDoor = Instantiate(doorPrefab, pos, Quaternion.identity) as GameObject;
@@ -59,10 +143,14 @@ public class LevelGenerator : MonoBehaviour
         KeyScript keyScript = newKey.GetComponent<KeyScript>();
         keyScript.player = player;
         keyScript.SetColor(color);
+<<<<<<< HEAD
 
 		// keyScript.AdjustSprite(tiles, pos);
 	}
 
+=======
+    }
+>>>>>>> feature/BSPTree
 
 	public class RoomContainer
     {
@@ -73,76 +161,120 @@ public class LevelGenerator : MonoBehaviour
         public int height;
 
         public int treeDepth;
+        public bool isLastNode;
         public RoomContainer l_child;
         public RoomContainer r_child;
 
         public bool isSplitHorizontally;
 
-        public RoomContainer(int x, int y, int width, int height, int treeDepth)
+        public RoomContainer(int x, int y, int width, int height, int treeDepth, List<RoomContainer> roomContainers)
         {
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
+
             this.treeDepth = treeDepth;
-            PrintRoomContainer();
+            this.isLastNode = true;
+            roomContainers.Add(this);
         }
 
-        public void Split(bool horizontal, int maxTreeDepth)
+        public void Split( bool horizontal, int maxTreeDepth, List<RoomContainer> roomContainers)
         {
             int newTreeDepth = this.treeDepth + 1;
             this.isSplitHorizontally = horizontal;
+            this.isLastNode = false;
 
             // create two new roomcontainers
             if (horizontal)
             {
-                int split_x = this.x + Mathf.RoundToInt(FindRandomSplit(this.width));
+                int split_x = this.x + FindRandomSplit(this.width);
 
                 int left_w = split_x - this.x;
                 int right_w = this.width - left_w;
 
-                l_child = new RoomContainer(this.x, this.y, left_w, this.height, newTreeDepth);
-                r_child = new RoomContainer(split_x, this.y, right_w, this.height, newTreeDepth);
+                l_child = new RoomContainer(this.x, this.y, left_w, this.height, newTreeDepth, roomContainers);
+                r_child = new RoomContainer(split_x, this.y, right_w, this.height, newTreeDepth, roomContainers);
             }
             else
             {
-                int split_y = this.y + Mathf.RoundToInt(FindRandomSplit(this.height));
+                int split_y = this.y + FindRandomSplit(this.height);
 
                 int left_h = split_y - this.y;
                 int right_h = this.height - left_h;
 
-                l_child = new RoomContainer(this.x, this.y, this.width, left_h, newTreeDepth);
-                r_child = new RoomContainer(this.x, split_y, this.width, right_h, newTreeDepth);
+                l_child = new RoomContainer(this.x, this.y, this.width, left_h, newTreeDepth, roomContainers);
+                r_child = new RoomContainer(this.x, split_y, this.width, right_h, newTreeDepth, roomContainers);
             }
 
             // recursively create more sub rooms in newly created rooms if maxTreeDepth hasn't been reached yet
             // if this room was split horizontally, split the next rooms vertically (and vice versa)
+            // Somtimes it will randomly stop splitting a room and leave it bigger.
             if (newTreeDepth < maxTreeDepth)
             {
-                l_child.Split(!horizontal, maxTreeDepth);
-                r_child.Split(!horizontal, maxTreeDepth);
+                if (Random.Range(0, 1f) > (STOP_SPLITTING_CHANCE * newTreeDepth) + (2 * -STOP_SPLITTING_CHANCE))
+                {
+                    l_child.Split(!horizontal, maxTreeDepth, roomContainers);
+                }
+                if (Random.Range(0, 1f) > (STOP_SPLITTING_CHANCE * newTreeDepth) + (2 * -STOP_SPLITTING_CHANCE))
+                {
+                    r_child.Split(!horizontal, maxTreeDepth, roomContainers);
+                }
             }
         }
 
-        public bool IsSplit()
-        {
-            return (this.l_child != null && this.r_child != null);
-        }
-
         // Returns a random point on SplittingLine to split it on.
-        public float FindRandomSplit(int splittingLine)
+        public int FindRandomSplit(int splittingLine)
         {
-            float min = MIN_SPLIT_PERCENTAGE * splittingLine;
-            float max = MAX_SPLIT_PERCENTAGE * splittingLine;
+            float min = MIN_SPLIT_PERCENTAGE * (float)splittingLine;
+            float max = MAX_SPLIT_PERCENTAGE * (float)splittingLine;
             float random = Random.Range(min, max);
-            return random;
+            return Mathf.RoundToInt(random);
         }
 
         // debugging bois
-        public void PrintRoomContainer()
+        public void Print()
         {
-            Debug.Log("x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth);
+            Debug.Log("RoomContainer Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth + ", isLastNode = " + this.isLastNode);
         }
 
+    }
+
+    public class Room
+    {
+        // (x, y) indicates top left corner
+        public int x;
+        public int y;
+        public int width;
+        public int height;
+
+        public Room(int container_x, int container_y, int container_w, int container_h)
+        {
+            int leftPadding = RandomPadding(container_w);
+            int rightPadding = RandomPadding(container_w);
+            int topPadding = RandomPadding(container_h);
+            int bottomPadding = RandomPadding(container_h);
+
+            this.x = container_x + leftPadding;
+            this.y = container_y + topPadding;
+            this.width = Mathf.Max(container_w - (leftPadding + rightPadding), MIN_ROOM_WIDTH);
+            this.height = Mathf.Max(container_h - (topPadding + bottomPadding), MIN_ROOM_HEIGHT);
+
+            this.Print();
+        }
+
+        public int RandomPadding(int length)
+        {
+            float min = MIN_ROOM_PADDING * (float)length;
+            float max = MAX_ROOM_PADDING * (float)length;
+            float random = Random.Range(min, max);
+            return Mathf.RoundToInt(random);
+        }
+
+        // debugging bois
+        public void Print()
+        {
+            Debug.Log("Room Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height);
+        }
     }
 }

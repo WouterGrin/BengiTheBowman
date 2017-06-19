@@ -27,7 +27,7 @@ public class WallTile : MonoBehaviour {
         {
             
             lowerTile = grid[(int)gridPos.x, (int)gridPos.y - 1];
-            if (lowerTile.tag != "Block")
+            if (lowerTile != null && lowerTile.tag != "Block")
             {
                 renderer.sprite = otherWallSprite;
             }
@@ -35,7 +35,7 @@ public class WallTile : MonoBehaviour {
         if (gridPos.y + 1 < LevelGenerator.STARTING_HEIGHT)
         {
             upperTile = grid[(int)gridPos.x, (int)gridPos.y + 1];
-            if (upperTile.tag != "Block")
+            if (upperTile != null && upperTile.tag != "Block")
             {
                 GetComponent<BoxCollider>().size = new Vector3(1, 0.4f, 1);
                 GetComponent<BoxCollider>().center = new Vector3(0, -0.3f, 0);
