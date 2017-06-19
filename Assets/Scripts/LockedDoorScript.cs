@@ -65,7 +65,7 @@ public class LockedDoorScript : MonoBehaviour
         {
             leftTile = tiles[(int)gridPos.x - 1, (int)gridPos.y];
         }
-        if (gridPos.x + 1 < LevelGenerator.WIDTH)
+        if (gridPos.x + 1 < LevelGenerator.STARTING_WIDTH)
         {
             rightTile = tiles[(int)gridPos.x + 1, (int)gridPos.y];
         }
@@ -73,7 +73,7 @@ public class LockedDoorScript : MonoBehaviour
         {
             lowerTile = tiles[(int)gridPos.x, (int)gridPos.y - 1];
         }
-        if (gridPos.y + 1 < LevelGenerator.HEIGHT)
+        if (gridPos.y + 1 < LevelGenerator.STARTING_HEIGHT)
         {
             upperTile = tiles[(int)gridPos.x, (int)gridPos.y + 1];
         }

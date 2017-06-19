@@ -2,25 +2,25 @@
 using System.Collections;
 using System;
 
-public class MapGenerator : MonoBehaviour
+public class CaveGenerator : MonoBehaviour
 {
 	public GameObject groundTile;
 	public GameObject wallTile;
 
-	[Range(0, 100)]
-	public int randomFillPercent;
+	int randomFillPercent;
 
 	string seed;
 	int[,] map;
 
 	GameObject player;
 
-	void Start()
+	public CaveGenerator(int randomFillPercent)
 	{
 		player = GameObject.Find("Player");
+		this.randomFillPercent = randomFillPercent;
 	}
 
-	GameObject[,] GenerateCave(int locationX, int locationY, int width, int height)
+	public GameObject[,] GenerateCave(int locationX, int locationY, int width, int height)
 	{
 		map = new int[width, height];
 		RandomFillMap(width, height);
@@ -35,7 +35,7 @@ public class MapGenerator : MonoBehaviour
 		return tiles;
 	}
 
-	void RandomFillMap(int width, int height)
+	private void RandomFillMap(int width, int height)
 	{
 		seed = Time.time.ToString();
 
@@ -57,7 +57,7 @@ public class MapGenerator : MonoBehaviour
 		}
 	}
 
-	void SmoothMap(int width, int height)
+	private void SmoothMap(int width, int height)
 	{
 		for (int x = 0; x < width; x++)
 		{
@@ -74,7 +74,7 @@ public class MapGenerator : MonoBehaviour
 		}
 	}
 
-	int GetSurroundingWallCount(int gridX, int gridY, int width, int height)
+	private int GetSurroundingWallCount(int gridX, int gridY, int width, int height)
 	{
 		int wallCount = 0;
 		for (int neighbourX = gridX - 1; neighbourX <= gridX + 1; neighbourX++)
@@ -98,7 +98,7 @@ public class MapGenerator : MonoBehaviour
 	}
 
 
-	GameObject[,] CreateTiles(int locationX, int locationY, int width, int height)
+	private GameObject[,] CreateTiles(int locationX, int locationY, int width, int height)
 	{
 		GameObject[,] tiles = new GameObject[width, height];
 		for (int x = 0; x < width; x++)
