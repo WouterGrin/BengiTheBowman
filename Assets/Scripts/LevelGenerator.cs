@@ -17,12 +17,8 @@ public class LevelGenerator : MonoBehaviour
     public const int MIN_ROOM_WIDTH = 9;
     public const int MIN_ROOM_HEIGHT = 9;
 
-<<<<<<< HEAD
-=======
     public GameObject[,] tiles;
    
-
->>>>>>> feature/BSPTree
     ObjectContainer objContainer;
     public GameObject groundTile;
     public GameObject wallTile;
@@ -37,11 +33,8 @@ public class LevelGenerator : MonoBehaviour
         player = GameObject.Find("Player");
 		caveGenerator = new CaveGenerator(45);
         GenerateRoomContainers();
-<<<<<<< HEAD
-=======
         GenerateRooms();
         GenerateLevel();
->>>>>>> feature/BSPTree
     }
 
 
@@ -71,9 +64,6 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
-
-<<<<<<< HEAD
-=======
     void GenerateLevel()
     {
         tiles = new GameObject[WIDTH, HEIGHT];
@@ -124,8 +114,6 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
-
->>>>>>> feature/BSPTree
     void PlaceDoor(Vector2 pos, Color color)
     {
         GameObject newDoor = Instantiate(doorPrefab, pos, Quaternion.identity) as GameObject;
@@ -143,14 +131,8 @@ public class LevelGenerator : MonoBehaviour
         KeyScript keyScript = newKey.GetComponent<KeyScript>();
         keyScript.player = player;
         keyScript.SetColor(color);
-<<<<<<< HEAD
-
 		// keyScript.AdjustSprite(tiles, pos);
 	}
-
-=======
-    }
->>>>>>> feature/BSPTree
 
 	public class RoomContainer
     {
