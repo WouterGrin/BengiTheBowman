@@ -5,12 +5,15 @@ using UnityEngine;
 public class LevelGenerator : MonoBehaviour
 {
     public List<RoomContainer> roomContainers = new List<RoomContainer>();
-    public List<Room> rooms = new List<Room>();
-    public const int WIDTH = 60;
-    public const int HEIGHT = 60;
+    public const int WIDTH = 70;
+    public const int HEIGHT = 70;
     public const float MIN_SPLIT_PERCENTAGE = 0.35f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
-    public const float STOP_SPLITTING_CHANCE = 0.33f;
+    public const float STOP_SPLITTING_CHANCE = 0.2f;
+
+    public List<Room> rooms = new List<Room>();
+    public const float MIN_ROOM_PADDING = 0.05f;
+    public const float MAX_ROOM_PADDING = 0.2f;
 
     public GameObject[,] tiles;
    
@@ -41,7 +44,7 @@ public class LevelGenerator : MonoBehaviour
 
     void GenerateRoomContainers()
     {
-        RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0);
+        RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0, roomContainers);
         int maxTreeDepth = 4;
         mainContainer.Split(true, maxTreeDepth, roomContainers);
     }
@@ -50,15 +53,18 @@ public class LevelGenerator : MonoBehaviour
     {
         foreach (RoomContainer rc in roomContainers)
         {
-            Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
-            rooms.Add(newRoom);
+            if (rc.isLastNode)
+            {
+                Debug.Log("found last node room container");
+                Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
+                rooms.Add(newRoom);
+            }
         }
     }
 
 
     void GenerateLevel()
     {
-
         tiles = new GameObject[WIDTH, HEIGHT];
         for (int i = 0; i < rooms.Count; i++)
         {
@@ -135,46 +141,50 @@ public class LevelGenerator : MonoBehaviour
         public int height;
 
         public int treeDepth;
+        public bool isLastNode;
         public RoomContainer l_child;
         public RoomContainer r_child;
 
         public bool isSplitHorizontally;
 
-        public RoomContainer(int x, int y, int width, int height, int treeDepth)
+        public RoomContainer(int x, int y, int width, int height, int treeDepth, List<RoomContainer> roomContainers)
         {
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
+
             this.treeDepth = treeDepth;
-            PrintRoomContainer();
+            this.isLastNode = true;
+            roomContainers.Add(this);
         }
 
         public void Split( bool horizontal, int maxTreeDepth, List<RoomContainer> roomContainers)
         {
             int newTreeDepth = this.treeDepth + 1;
             this.isSplitHorizontally = horizontal;
+            this.isLastNode = false;
 
             // create two new roomcontainers
             if (horizontal)
             {
-                int split_x = this.x + Mathf.RoundToInt(FindRandomSplit(this.width));
+                int split_x = this.x + FindRandomSplit(this.width);
 
                 int left_w = split_x - this.x;
                 int right_w = this.width - left_w;
 
-                l_child = new RoomContainer(this.x, this.y, left_w, this.height, newTreeDepth);
-                r_child = new RoomContainer(split_x, this.y, right_w, this.height, newTreeDepth);
+                l_child = new RoomContainer(this.x, this.y, left_w, this.height, newTreeDepth, roomContainers);
+                r_child = new RoomContainer(split_x, this.y, right_w, this.height, newTreeDepth, roomContainers);
             }
             else
             {
-                int split_y = this.y + Mathf.RoundToInt(FindRandomSplit(this.height));
+                int split_y = this.y + FindRandomSplit(this.height);
 
                 int left_h = split_y - this.y;
                 int right_h = this.height - left_h;
 
-                l_child = new RoomContainer(this.x, this.y, this.width, left_h, newTreeDepth);
-                r_child = new RoomContainer(this.x, split_y, this.width, right_h, newTreeDepth);
+                l_child = new RoomContainer(this.x, this.y, this.width, left_h, newTreeDepth, roomContainers);
+                r_child = new RoomContainer(this.x, split_y, this.width, right_h, newTreeDepth, roomContainers);
             }
 
             // recursively create more sub rooms in newly created rooms if maxTreeDepth hasn't been reached yet
@@ -185,40 +195,33 @@ public class LevelGenerator : MonoBehaviour
                 if (Random.Range(0, 1f) > (STOP_SPLITTING_CHANCE * newTreeDepth) + (2 * -STOP_SPLITTING_CHANCE))
                 {
                     l_child.Split(!horizontal, maxTreeDepth, roomContainers);
+                }
+                if (Random.Range(0, 1f) > (STOP_SPLITTING_CHANCE * newTreeDepth) + (2 * -STOP_SPLITTING_CHANCE))
+                {
                     r_child.Split(!horizontal, maxTreeDepth, roomContainers);
                 }
-                else
-                {
-                    Debug.Log("adding cur room");
-                    roomContainers.Add(this);
-                }
+                // TODO: als ie klaar is met splitten:
+                // ga terug naar parent. kijk vervolgens of links en of rechts gesplit zijn.
+                // 1 - heb ik hem gesplit? zonee - add aan room containers en return in recursion.
+                // 2 - 
+                // check welke childs je hebt gesplit. Als ie gesplit is, niet toevoegen aan roomContainers list.
+                // als ie NIET gesplit is, wel toevoegen!
             }
-            else
-            {
-                Debug.Log("adding both rooms");
-                roomContainers.Add(l_child);
-                roomContainers.Add(r_child);
-            }
-        }
-
-        public bool IsSplit()
-        {
-            return (this.l_child != null && this.r_child != null);
         }
 
         // Returns a random point on SplittingLine to split it on.
-        public float FindRandomSplit(int splittingLine)
+        public int FindRandomSplit(int splittingLine)
         {
             float min = MIN_SPLIT_PERCENTAGE * (float)splittingLine;
             float max = MAX_SPLIT_PERCENTAGE * (float)splittingLine;
             float random = Random.Range(min, max);
-            return random;
+            return Mathf.RoundToInt(random);
         }
 
         // debugging bois
-        public void PrintRoomContainer()
+        public void Print()
         {
-            Debug.Log("x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth);
+            Debug.Log("RoomContainer Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth + ", isLastNode = " + this.isLastNode);
         }
 
     }
@@ -231,12 +234,33 @@ public class LevelGenerator : MonoBehaviour
         public int width;
         public int height;
 
-        public Room(int x, int y, int width, int height)
+        public Room(int container_x, int container_y, int container_w, int container_h)
         {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
+            int leftPadding = RandomPadding(container_w);
+            int rightPadding = RandomPadding(container_w);
+            int topPadding = RandomPadding(container_h);
+            int bottomPadding = RandomPadding(container_h);
+
+            this.x = container_x + leftPadding;
+            this.y = container_y + topPadding;
+            this.width = container_w - (leftPadding + rightPadding);
+            this.height = container_h - (topPadding + bottomPadding);
+
+            this.Print();
+        }
+
+        public int RandomPadding(int length)
+        {
+            float min = MIN_ROOM_PADDING * (float)length;
+            float max = MAX_ROOM_PADDING * (float)length;
+            float random = Random.Range(min, max);
+            return Mathf.RoundToInt(random);
+        }
+
+        // debugging bois
+        public void Print()
+        {
+            Debug.Log("Room Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height);
         }
     }
 }
