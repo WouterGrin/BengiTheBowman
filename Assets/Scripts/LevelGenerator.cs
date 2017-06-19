@@ -27,7 +27,7 @@ public class LevelGenerator : MonoBehaviour
     {
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
         player = GameObject.Find("Player");
-        GenerateRooms();
+        GenerateRoomContainers();
         GenerateLevel();
     }
 
@@ -38,10 +38,10 @@ public class LevelGenerator : MonoBehaviour
     }
 
 
-    void GenerateRooms()
+    void GenerateRoomContainers()
     {
         RoomContainer mainContainer = new RoomContainer(0, 0, STARTING_WIDTH, STARTING_HEIGHT, 0);
-        int maxTreeDepth = 4;
+        int maxTreeDepth = 3;
         mainContainer.Split(true, maxTreeDepth);
     }
 
@@ -166,9 +166,9 @@ public class LevelGenerator : MonoBehaviour
             }
 
             // recursively create more sub rooms in newly created rooms if maxTreeDepth hasn't been reached yet
+            // if this room was split horizontally, split the next rooms vertically (and vice versa)
             if (newTreeDepth < maxTreeDepth)
             {
-                // if this room was split horizontally, split the next rooms vertically (and vice versa)
                 l_child.Split(!horizontal, maxTreeDepth);
                 r_child.Split(!horizontal, maxTreeDepth);
             }
@@ -179,13 +179,12 @@ public class LevelGenerator : MonoBehaviour
             return (this.l_child != null && this.r_child != null);
         }
 
-        // Returns a random point to splite splittingLine on.
+        // Returns a random point on SplittingLine to split it on.
         public float FindRandomSplit(int splittingLine)
         {
             float min = MIN_SPLIT_PERCENTAGE * splittingLine;
             float max = MAX_SPLIT_PERCENTAGE * splittingLine;
             float random = Random.Range(min, max);
-            // Debug.Log("RANDOM = " + random + ", MIN = " + min + ", MAX = " + max);
             return random;
         }
 
