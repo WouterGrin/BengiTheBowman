@@ -5,17 +5,17 @@ using UnityEngine;
 public class LevelGenerator : MonoBehaviour
 {
     public List<RoomContainer> roomContainers = new List<RoomContainer>();
-    public const int WIDTH = 70;
-    public const int HEIGHT = 70;
-    public const float MIN_SPLIT_PERCENTAGE = 0.4f;
+    public const int WIDTH = 80;
+    public const int HEIGHT = 80;
+    public const float MIN_SPLIT_PERCENTAGE = 0.35f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
     public const float STOP_SPLITTING_CHANCE = 0.4f;
 
     public List<Room> rooms = new List<Room>();
     public const float MIN_ROOM_PADDING = 0.05f;
     public const float MAX_ROOM_PADDING = 0.2f;
-    public const int MIN_ROOM_WIDTH = 10;
-    public const int MIN_ROOM_HEIGHT = 10;
+    public const int MIN_ROOM_WIDTH = 9;
+    public const int MIN_ROOM_HEIGHT = 9;
 
     public GameObject[,] tiles;
    
