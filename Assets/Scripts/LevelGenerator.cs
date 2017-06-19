@@ -70,6 +70,10 @@ public class LevelGenerator : MonoBehaviour
         for (int i = 0; i < rooms.Count; i++)
         {
             Room currRoom = rooms[i];
+
+            // TODO: Get values of newcave into tiles.
+            // GameObject[,] newCave = caveGenerator.GenerateCave(currRoom.x, currRoom.y, currRoom.width, currRoom.height);
+
             for (int x = currRoom.x; x < currRoom.x + currRoom.width; x++)
             {
                 for (int y = currRoom.y; y < currRoom.y + currRoom.height; y++)

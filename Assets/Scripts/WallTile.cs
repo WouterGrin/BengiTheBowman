@@ -28,11 +28,11 @@ public class WallTile : MonoBehaviour {
             
             lowerTile = grid[(int)gridPos.x, (int)gridPos.y - 1];
             if (lowerTile != null && lowerTile.tag != "Block")
-            {
+            {          
                 renderer.sprite = otherWallSprite;
             }
         }
-        if (gridPos.y + 1 < LevelGenerator.STARTING_HEIGHT)
+        if (gridPos.y + 1 < LevelGenerator.HEIGHT)
         {
             upperTile = grid[(int)gridPos.x, (int)gridPos.y + 1];
             if (upperTile != null && upperTile.tag != "Block")
