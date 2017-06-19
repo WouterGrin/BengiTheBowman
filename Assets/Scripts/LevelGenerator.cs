@@ -7,7 +7,7 @@ public class LevelGenerator : MonoBehaviour
     public List<RoomContainer> rooms = new List<RoomContainer>();
     public const int WIDTH = 100;
     public const int HEIGHT = 100;
-    public const float MIN_SPLIT_PERCENTAGE = 0.4f;
+    public const float MIN_SPLIT_PERCENTAGE = 0.3f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
 
     public GameObject[,] tiles;
@@ -50,7 +50,6 @@ public class LevelGenerator : MonoBehaviour
     {
 
         tiles = new GameObject[WIDTH, HEIGHT];
-        print("COUNT  " + rooms.Count);
         for (int i = 0; i < rooms.Count; i++)
         {
             RoomContainer currContainer = rooms[i];
@@ -59,7 +58,7 @@ public class LevelGenerator : MonoBehaviour
                 for (int y = currContainer.y; y < currContainer.y + currContainer.height; y++)
                 {
                     GameObject newTile;
-                    if (x != currContainer.x && y != currContainer.y && x != currContainer.width -1 && y != currContainer.height - 1 && tiles[x, y] == null)
+                    if (x != currContainer.x && y != currContainer.y && x != currContainer.x + currContainer.width -1 && y != currContainer.y + currContainer.height - 1 && tiles[x, y] == null)
                     {
                         newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
                         
