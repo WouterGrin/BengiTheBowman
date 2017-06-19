@@ -7,13 +7,15 @@ public class LevelGenerator : MonoBehaviour
     public List<RoomContainer> roomContainers = new List<RoomContainer>();
     public const int WIDTH = 70;
     public const int HEIGHT = 70;
-    public const float MIN_SPLIT_PERCENTAGE = 0.35f;
+    public const float MIN_SPLIT_PERCENTAGE = 0.4f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
-    public const float STOP_SPLITTING_CHANCE = 0.2f;
+    public const float STOP_SPLITTING_CHANCE = 0.4f;
 
     public List<Room> rooms = new List<Room>();
     public const float MIN_ROOM_PADDING = 0.05f;
     public const float MAX_ROOM_PADDING = 0.2f;
+    public const int MIN_ROOM_WIDTH = 10;
+    public const int MIN_ROOM_HEIGHT = 10;
 
     public GameObject[,] tiles;
    
@@ -200,12 +202,6 @@ public class LevelGenerator : MonoBehaviour
                 {
                     r_child.Split(!horizontal, maxTreeDepth, roomContainers);
                 }
-                // TODO: als ie klaar is met splitten:
-                // ga terug naar parent. kijk vervolgens of links en of rechts gesplit zijn.
-                // 1 - heb ik hem gesplit? zonee - add aan room containers en return in recursion.
-                // 2 - 
-                // check welke childs je hebt gesplit. Als ie gesplit is, niet toevoegen aan roomContainers list.
-                // als ie NIET gesplit is, wel toevoegen!
             }
         }
 
@@ -243,8 +239,8 @@ public class LevelGenerator : MonoBehaviour
 
             this.x = container_x + leftPadding;
             this.y = container_y + topPadding;
-            this.width = container_w - (leftPadding + rightPadding);
-            this.height = container_h - (topPadding + bottomPadding);
+            this.width = Mathf.Max(container_w - (leftPadding + rightPadding), MIN_ROOM_WIDTH);
+            this.height = Mathf.Max(container_h - (topPadding + bottomPadding), MIN_ROOM_HEIGHT);
 
             this.Print();
         }
