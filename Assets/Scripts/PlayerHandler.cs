@@ -102,9 +102,9 @@ public class PlayerHandler : MonoBehaviour
     {
         
         renderer = GetComponent<SpriteRenderer>();
-        horizontalDashStripesRenderer = transform.FindChild("horizontalDashStripes").GetComponent<SpriteRenderer>();
-        upperDashStripesRenderer = transform.FindChild("upperDashStripes").GetComponent<SpriteRenderer>();
-        lowerDashStripesRenderer = transform.FindChild("lowerDashStripes").GetComponent<SpriteRenderer>();
+        horizontalDashStripesRenderer = transform.Find("horizontalDashStripes").GetComponent<SpriteRenderer>();
+        upperDashStripesRenderer = transform.Find("upperDashStripes").GetComponent<SpriteRenderer>();
+        lowerDashStripesRenderer = transform.Find("lowerDashStripes").GetComponent<SpriteRenderer>();
 
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
 

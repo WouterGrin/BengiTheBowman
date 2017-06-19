@@ -5,6 +5,12 @@ using UnityEngine;
 public class LevelGenerator : MonoBehaviour
 {
 
+    public GameObject[,] rooms;
+    public const int STARTING_WIDTH = 100;
+    public const int STARTING_HEIGHT = 100;
+    public const float MIN_SPLIT_PERCENTAGE = 0.33f;
+    public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
+
     public GameObject[,] tiles;
     public const int WIDTH = 10;
     public const int HEIGHT = 10;
@@ -28,6 +34,13 @@ public class LevelGenerator : MonoBehaviour
     void Update()
     {
 
+    }
+
+
+    void GenerateRooms()
+    {
+        RoomContainer mainContainer = new RoomContainer(0, 0, STARTING_WIDTH, STARTING_HEIGHT);
+        mainContainer.Split(true);
     }
 
 
@@ -97,5 +110,56 @@ public class LevelGenerator : MonoBehaviour
 
         //doorScript.SetColor(color);
         // doorScript.AdjustSprite(tiles, pos);
+    }
+
+    public class RoomContainer
+    {
+        // (x, y) indicates top left corner
+        public int x;
+        public int y;
+        public int width;
+        public int height;
+        public RoomContainer l_child;
+        public RoomContainer r_child;
+
+        public RoomContainer(int x, int y, int width, int height)
+        {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+
+        public void Split(bool horizontal)
+        {
+            if (horizontal)
+            {
+                int split_x = Mathf.RoundToInt(FindRandomSplit(width));
+
+                int left_w = split_x - this.x;
+                int right_w = this.width - left_w;
+
+                l_child = new RoomContainer(this.x, this.y, left_w, this.height);
+                r_child = new RoomContainer(split_x, this.y, right_w, this.height);
+            }
+            else
+            {
+                int split_y = Mathf.RoundToInt(FindRandomSplit(height));
+
+                int left_h = split_y - this.y;
+                int right_h = this.height - left_h;
+
+                l_child = new RoomContainer(this.x, this.y, this.width, left_h);
+                r_child = new RoomContainer(this.x, split_y, this.width, right_h);
+            }
+        }
+
+        public float FindRandomSplit(int splittingLine)
+        {
+            float min = MIN_SPLIT_PERCENTAGE * splittingLine;
+            float max = MAX_SPLIT_PERCENTAGE * splittingLine;
+            return Random.Range(min, max);
+        }
+
     }
 }
