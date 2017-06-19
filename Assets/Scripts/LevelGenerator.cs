@@ -8,7 +8,7 @@ public class LevelGenerator : MonoBehaviour
     public GameObject[,] rooms;
     public const int STARTING_WIDTH = 100;
     public const int STARTING_HEIGHT = 100;
-    public const float MIN_SPLIT_PERCENTAGE = 0.33f;
+    public const float MIN_SPLIT_PERCENTAGE = 0.2f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
 
     public GameObject[,] tiles;
@@ -27,6 +27,7 @@ public class LevelGenerator : MonoBehaviour
     {
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
         player = GameObject.Find("Player");
+        GenerateRooms();
         GenerateLevel();
     }
 
@@ -39,8 +40,9 @@ public class LevelGenerator : MonoBehaviour
 
     void GenerateRooms()
     {
-        RoomContainer mainContainer = new RoomContainer(0, 0, STARTING_WIDTH, STARTING_HEIGHT);
-        mainContainer.Split(true);
+        RoomContainer mainContainer = new RoomContainer(0, 0, STARTING_WIDTH, STARTING_HEIGHT, 0);
+        int maxTreeDepth = 4;
+        mainContainer.Split(true, maxTreeDepth);
     }
 
 
@@ -119,46 +121,78 @@ public class LevelGenerator : MonoBehaviour
         public int y;
         public int width;
         public int height;
+
+        public int treeDepth;
         public RoomContainer l_child;
         public RoomContainer r_child;
 
-        public RoomContainer(int x, int y, int width, int height)
+        public bool isSplitHorizontally;
+
+        public RoomContainer(int x, int y, int width, int height, int treeDepth)
         {
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
+            this.treeDepth = treeDepth;
+            PrintRoomContainer();
         }
 
-        public void Split(bool horizontal)
+        public void Split(bool horizontal, int maxTreeDepth)
         {
+            int newTreeDepth = this.treeDepth + 1;
+            this.isSplitHorizontally = horizontal;
+
+            // create two new roomcontainers
             if (horizontal)
             {
-                int split_x = Mathf.RoundToInt(FindRandomSplit(width));
+                int split_x = this.x + Mathf.RoundToInt(FindRandomSplit(this.width));
 
                 int left_w = split_x - this.x;
                 int right_w = this.width - left_w;
 
-                l_child = new RoomContainer(this.x, this.y, left_w, this.height);
-                r_child = new RoomContainer(split_x, this.y, right_w, this.height);
+                l_child = new RoomContainer(this.x, this.y, left_w, this.height, newTreeDepth);
+                r_child = new RoomContainer(split_x, this.y, right_w, this.height, newTreeDepth);
             }
             else
             {
-                int split_y = Mathf.RoundToInt(FindRandomSplit(height));
+                int split_y = this.y + Mathf.RoundToInt(FindRandomSplit(this.height));
 
                 int left_h = split_y - this.y;
                 int right_h = this.height - left_h;
 
-                l_child = new RoomContainer(this.x, this.y, this.width, left_h);
-                r_child = new RoomContainer(this.x, split_y, this.width, right_h);
+                l_child = new RoomContainer(this.x, this.y, this.width, left_h, newTreeDepth);
+                r_child = new RoomContainer(this.x, split_y, this.width, right_h, newTreeDepth);
+            }
+
+            // recursively create more sub rooms in newly created rooms if maxTreeDepth hasn't been reached yet
+            if (newTreeDepth < maxTreeDepth)
+            {
+                // if this room was split horizontally, split the next rooms vertically (and vice versa)
+                l_child.Split(!horizontal, maxTreeDepth);
+                r_child.Split(!horizontal, maxTreeDepth);
             }
         }
 
+        public bool IsSplit()
+        {
+            return (this.l_child != null && this.r_child != null);
+        }
+
+        // Returns a random point to splite splittingLine on.
         public float FindRandomSplit(int splittingLine)
         {
             float min = MIN_SPLIT_PERCENTAGE * splittingLine;
             float max = MAX_SPLIT_PERCENTAGE * splittingLine;
-            return Random.Range(min, max);
+            float random = Random.Range(min, max);
+            // Debug.Log("RANDOM = " + random + ", MIN = " + min + ", MAX = " + max);
+            return random;
+        }
+
+        // debugging bois
+        public void PrintRoomContainer()
+        {
+            Debug.Log("x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth);
         }
 
     }
