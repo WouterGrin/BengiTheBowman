@@ -7,15 +7,19 @@ public class LevelGenerator : MonoBehaviour
     public List<RoomContainer> roomContainers = new List<RoomContainer>();
     public const int WIDTH = 80;
     public const int HEIGHT = 80;
-    public const float MIN_SPLIT_PERCENTAGE = 0.35f;
+    public const int MAX_TREE_DEPTH = 4;
+    public const float MIN_SPLIT_PERCENTAGE = 0.3f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
     public const float STOP_SPLITTING_CHANCE = 0.4f;
 
     public List<Room> rooms = new List<Room>();
     public const float MIN_ROOM_PADDING = 0.05f;
-    public const float MAX_ROOM_PADDING = 0.2f;
+    public const float MAX_ROOM_PADDING = 0.15f;
     public const int MIN_ROOM_WIDTH = 9;
     public const int MIN_ROOM_HEIGHT = 9;
+
+    public List<Path> paths = new List<Path>();
+    public const int PATH_WIDTH = 3;
 
     public GameObject[,] tiles;
    
@@ -53,12 +57,19 @@ public class LevelGenerator : MonoBehaviour
     void GenerateRoomContainers()
     {
         RoomContainer mainContainer = new RoomContainer(0, 0, WIDTH, HEIGHT, 0, roomContainers);
-        int maxTreeDepth = 4;
-        mainContainer.Split(true, maxTreeDepth, roomContainers);
+        
+        mainContainer.Split(true, MAX_TREE_DEPTH, roomContainers);
     }
 
     void GenerateRooms()
     {
+        foreach (RoomContainer rc in roomContainers)
+        {
+            if (!rc.isLastNode)
+            {
+                GeneratePath(rc);
+            }
+        }
         foreach (RoomContainer rc in roomContainers)
         {
             if (rc.isLastNode)
@@ -67,6 +78,41 @@ public class LevelGenerator : MonoBehaviour
                 rooms.Add(newRoom);
             }
         }
+    }
+
+    // generates a pathway between leftchild and rightchild of a roomcontainer.
+    // this method will only be called after checking if the roomcontainer has l_ & r_child.
+    void GeneratePath(RoomContainer roomContainer)
+    {
+        int left_x = 0;
+        int left_y = 0;
+        int right_x = 0;
+        int right_y = 0;
+
+        left_x = roomContainer.l_child.center[0];
+        left_y = roomContainer.l_child.center[1];
+        right_x = roomContainer.r_child.center[0];
+        right_y = roomContainer.r_child.center[1];
+
+        int center_x = 0;
+        int center_y = 0;
+        int distance = 0;
+
+        if (roomContainer.isSplitHorizontally)
+        {
+            center_x = roomContainer.center[0];
+            center_y = roomContainer.split - 1;
+            distance = (right_x - left_x) + 2;
+        }
+        else
+        {
+            center_x = roomContainer.split - 1;
+            center_y = roomContainer.center[1];
+            distance = (right_y - left_y) + 2;
+        }
+
+        Path newPath = new Path(left_x, left_y, distance, roomContainer.isSplitHorizontally);
+        paths.Add(newPath);
     }
 
     void GenerateLevel()
@@ -87,7 +133,29 @@ public class LevelGenerator : MonoBehaviour
                     if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width -1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null && newCave[x - currRoom.x, y - currRoom.y] == 0)	
                     {
                         newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-                        
+                        tiles[x, y] = newTile;
+
+                    }
+                    else if (tiles[x,y] == null)
+                    {
+                        newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                        tiles[x, y] = newTile;
+                    }  
+                }
+            }
+        }
+
+        foreach (Path path in paths)
+        {
+            for (int x = path.x; x < path.x + path.width; x++)
+            {
+                for (int y = path.y; y < path.y + path.height; y++)
+                {
+                    GameObject newTile;
+                    if ((x != path.x && y != path.y && x != path.x + path.width - 1 && y != path.y + path.height - 1) ||  tiles[x,y] != null)
+                    {
+                        newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+
                     }
                     else
                     {
@@ -95,6 +163,9 @@ public class LevelGenerator : MonoBehaviour
                     }
 
                     tiles[x, y] = newTile;
+
+                    // GameObject newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                    // tiles[x, y] = newTile;
                 }
             }
         }
@@ -150,13 +221,16 @@ public class LevelGenerator : MonoBehaviour
         public int y;
         public int width;
         public int height;
+        public int[] center;
 
         public int treeDepth;
         public bool isLastNode;
         public RoomContainer l_child;
         public RoomContainer r_child;
+        public Room room;
 
         public bool isSplitHorizontally;
+        public int split;
 
         public RoomContainer(int x, int y, int width, int height, int treeDepth, List<RoomContainer> roomContainers)
         {
@@ -164,6 +238,7 @@ public class LevelGenerator : MonoBehaviour
             this.y = y;
             this.width = width;
             this.height = height;
+            this.center = new int[2] {(x + width/2), (y + height/2)};
 
             this.treeDepth = treeDepth;
             this.isLastNode = true;
@@ -180,6 +255,7 @@ public class LevelGenerator : MonoBehaviour
             if (horizontal)
             {
                 int split_x = this.x + FindRandomSplit(this.width);
+                this.split = split_x;
 
                 int left_w = split_x - this.x;
                 int right_w = this.width - left_w;
@@ -190,6 +266,7 @@ public class LevelGenerator : MonoBehaviour
             else
             {
                 int split_y = this.y + FindRandomSplit(this.height);
+                this.split = split_y;
 
                 int left_h = split_y - this.y;
                 int right_h = this.height - left_h;
@@ -212,6 +289,11 @@ public class LevelGenerator : MonoBehaviour
                     r_child.Split(!horizontal, maxTreeDepth, roomContainers);
                 }
             }
+        }
+
+        public bool IsSplit()
+        {
+            return (this.l_child != null && this.r_child != null);
         }
 
         // Returns a random point on SplittingLine to split it on.
@@ -264,6 +346,53 @@ public class LevelGenerator : MonoBehaviour
         public void Print()
         {
             Debug.Log("Room Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height);
+        }
+    }
+
+    public class Path
+    {
+        // (x, y) indicates top left corner
+        public int x;
+        public int y;
+        public int width;
+        public int height;
+        public bool isHorizontal;
+
+        public Path(int x, int y, int size, bool horizontal)
+        {
+            this.x = x;
+            this.y = y;
+            this.isHorizontal = horizontal;
+            if(horizontal)
+            {
+                this.width = size;
+                this.height = PATH_WIDTH;
+            }
+            else
+            {
+                this.width = PATH_WIDTH;
+                this.height = size;
+            }
+        }
+
+        public void Resize(int coordinate, int size)
+        {
+            if (this.isHorizontal)
+            {
+                this.x = coordinate;
+                this.width = size;
+            }
+            else
+            {
+                this.y = coordinate;
+                this.height = size;
+            }
+        }
+
+        // debugging bois
+        public void Print()
+        {
+            Debug.Log("Path Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", isHorizontal = " + this.isHorizontal);
         }
     }
 }
