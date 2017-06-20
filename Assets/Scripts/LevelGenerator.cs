@@ -94,20 +94,14 @@ public class LevelGenerator : MonoBehaviour
         right_x = roomContainer.r_child.center[0];
         right_y = roomContainer.r_child.center[1];
 
-        int center_x = 0;
-        int center_y = 0;
         int distance = 0;
 
         if (roomContainer.isSplitHorizontally)
         {
-            center_x = roomContainer.center[0];
-            center_y = roomContainer.split - 1;
             distance = (right_x - left_x) + 2;
         }
         else
         {
-            center_x = roomContainer.split - 1;
-            center_y = roomContainer.center[1];
             distance = (right_y - left_y) + 2;
         }
 
@@ -227,7 +221,6 @@ public class LevelGenerator : MonoBehaviour
         public bool isLastNode;
         public RoomContainer l_child;
         public RoomContainer r_child;
-        public Room room;
 
         public bool isSplitHorizontally;
         public int split;
@@ -289,11 +282,6 @@ public class LevelGenerator : MonoBehaviour
                     r_child.Split(!horizontal, maxTreeDepth, roomContainers);
                 }
             }
-        }
-
-        public bool IsSplit()
-        {
-            return (this.l_child != null && this.r_child != null);
         }
 
         // Returns a random point on SplittingLine to split it on.
@@ -371,20 +359,6 @@ public class LevelGenerator : MonoBehaviour
             else
             {
                 this.width = PATH_WIDTH;
-                this.height = size;
-            }
-        }
-
-        public void Resize(int coordinate, int size)
-        {
-            if (this.isHorizontal)
-            {
-                this.x = coordinate;
-                this.width = size;
-            }
-            else
-            {
-                this.y = coordinate;
                 this.height = size;
             }
         }
