@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class LevelGenerator : MonoBehaviour
@@ -65,21 +66,25 @@ public class LevelGenerator : MonoBehaviour
     {
         foreach (RoomContainer rc in roomContainers)
         {
+            if (rc.isLastNode)
+            {
+                Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
+                rooms.Add(newRoom);
+                rc.room = newRoom;
+            }
+        }
+        foreach (RoomContainer rc in roomContainers)
+        {
             if (!rc.isLastNode)
             {
                 GeneratePath(rc);
             }
         }
-        foreach (RoomContainer rc in roomContainers)
+        // TODO: remove this debugging part
+        foreach (Room room in rooms)
         {
-            if (rc.isLastNode)
-            {
-                Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
-                rooms.Add(newRoom);
-            }
+            room.PrintNeighbours();
         }
-
-        
     }
 
     // generates a pathway between leftchild and rightchild of a roomcontainer.
@@ -110,6 +115,9 @@ public class LevelGenerator : MonoBehaviour
 
         Path newPath = new Path(left_x, left_y, distance, roomContainer.isSplitHorizontally);
         paths.Add(newPath);
+
+        List<RoomContainer> finalNodes = roomContainer.FindFinalNodesOnPath();
+        newPath.FillRoomNeighboursAfterPathCreation(finalNodes);
     }
 
     void GenerateLevel()
@@ -249,6 +257,9 @@ public class LevelGenerator : MonoBehaviour
         public RoomContainer l_child;
         public RoomContainer r_child;
 
+        public Room room;
+        public int distanceFromPath;
+
         public bool isSplitHorizontally;
         public int split;
 
@@ -263,6 +274,26 @@ public class LevelGenerator : MonoBehaviour
             this.treeDepth = treeDepth;
             this.isLastNode = true;
             roomContainers.Add(this);
+        }
+
+        public List<RoomContainer> FindFinalNodesOnPath()
+        {
+            List<RoomContainer> finalNodes = new List<RoomContainer>();
+            this.AddFinalNodesToList(finalNodes);
+            return finalNodes;
+        }
+
+        public void AddFinalNodesToList(List<RoomContainer> roomContainers)
+        {
+            if (!this.isLastNode)
+            {
+                this.l_child.AddFinalNodesToList(roomContainers);
+                this.r_child.AddFinalNodesToList(roomContainers);
+            }
+            else
+            {
+                roomContainers.Add(this);
+            }
         }
 
         public void Split( bool horizontal, int maxTreeDepth, List<RoomContainer> roomContainers)
@@ -336,6 +367,8 @@ public class LevelGenerator : MonoBehaviour
         public int width;
         public int height;
 
+        public List<Room> neighbours;
+
         public Room(int container_x, int container_y, int container_w, int container_h)
         {
             int leftPadding = RandomPadding(container_w);
@@ -347,6 +380,8 @@ public class LevelGenerator : MonoBehaviour
             this.y = container_y + topPadding;
             this.width = Mathf.Max(container_w - (leftPadding + rightPadding), MIN_ROOM_WIDTH);
             this.height = Mathf.Max(container_h - (topPadding + bottomPadding), MIN_ROOM_HEIGHT);
+
+            neighbours = new List<Room>();
         }
 
         public int RandomPadding(int length)
@@ -361,6 +396,16 @@ public class LevelGenerator : MonoBehaviour
         public void Print()
         {
             Debug.Log("Room Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height);
+        }
+
+        // debugging bois
+        public void PrintNeighbours()
+        {
+            this.Print();
+            foreach(Room neighbour in this.neighbours)
+            {
+                Debug.Log("neighbour: x = " + neighbour.x + ", y = " + neighbour.y);
+            }
         }
     }
 
@@ -388,6 +433,78 @@ public class LevelGenerator : MonoBehaviour
                 this.width = PATH_WIDTH;
                 this.height = size;
             }
+        }
+
+        public void FillRoomNeighboursAfterPathCreation(List<RoomContainer> finalNodes)
+        {
+            // TODO: Sometimes a path doesn't intersect multiple rooms and keeps going until it reaches another path.
+            // In that case, neighbours don't get added correctly because the connected RoomContainer will be removed in this step:
+            finalNodes = this.RemoveContainersWithRoomsNotOnPath(finalNodes);
+
+            if (finalNodes.Count > 2)
+            {
+                finalNodes = GetTwoClosestContainers(finalNodes);
+            }
+
+            if (finalNodes.Count > 1)
+            {
+                RoomContainer rc1 = finalNodes[0];
+                RoomContainer rc2 = finalNodes[1];
+
+                rc1.room.neighbours.Add(rc2.room);
+                rc2.room.neighbours.Add(rc1.room);
+            }
+        }
+
+        // these methods are becoming abomiantions like a UFKCING spaghetti monster PIECE Of shit
+        public List<RoomContainer> GetTwoClosestContainers(List<RoomContainer> roomContainers)
+        {
+            int pathMiddle;
+            List<RoomContainer> temp = new List<RoomContainer>();
+            int[] distances = new int[roomContainers.Count];
+            int[] shortestDistanceIndexes = new int[2];
+
+            if (this.isHorizontal)
+            {
+                pathMiddle = this.x + (this.width / 2);
+                for (int i = 0; i < roomContainers.Count; i++)
+                {
+                    RoomContainer rc = roomContainers[i];
+                    int rcLeft = rc.x;
+                    int rcRight = rc.x + rc.width;
+                    int rc_distance = Mathf.Min(Mathf.Abs(rcLeft - pathMiddle), Mathf.Abs(rcRight - pathMiddle));
+                    rc.distanceFromPath = rc_distance;
+                }
+            }
+            else
+            {
+                pathMiddle = this.y + (this.height / 2);
+                for (int i = 0; i < roomContainers.Count; i++)
+                {
+                    RoomContainer rc = roomContainers[i];
+                    int rcLeft = rc.y;
+                    int rcRight = rc.y + rc.height;
+                    int rc_distance = Mathf.Min(Mathf.Abs(rcLeft - pathMiddle), Mathf.Abs(rcRight - pathMiddle));
+                    rc.distanceFromPath = rc_distance;
+                }
+            }
+
+            List<RoomContainer> sortedList = roomContainers.OrderBy(rc => rc.distanceFromPath).ToList();
+            sortedList.RemoveRange(2, sortedList.Count - 2);
+            return sortedList;
+        }
+
+        public List<RoomContainer> RemoveContainersWithRoomsNotOnPath(List<RoomContainer> roomContainers)
+        {
+            List<RoomContainer> temp = new List<RoomContainer>();
+            foreach (RoomContainer rc in roomContainers)
+            {
+                if (rc.room.x < (this.x + this.width) && (rc.room.x + rc.room.width) > this.x && (rc.room.y + rc.room.height) > this.y && rc.room.y < (this.y + this.height))
+                {
+                    temp.Add(rc);
+                }
+            }
+            return temp;
         }
 
         // debugging bois
