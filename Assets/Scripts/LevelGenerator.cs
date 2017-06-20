@@ -63,7 +63,6 @@ public class LevelGenerator : MonoBehaviour
         {
             if (rc.isLastNode)
             {
-                //Debug.Log("found last node room container");
                 Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
                 rooms.Add(newRoom);
             }
@@ -77,7 +76,6 @@ public class LevelGenerator : MonoBehaviour
         {
             Room currRoom = rooms[i];
 
-			//TODO: Get values of newcave into tiles.
 			int[,] newCave = caveGenerator.GenerateCave(currRoom.width, currRoom.height);
 
             for (int x = currRoom.x; x < currRoom.x + currRoom.width; x++)

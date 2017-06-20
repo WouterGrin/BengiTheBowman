@@ -68,7 +68,7 @@ public class CaveGenerator : MonoBehaviour
 			{
 				int neighbourWallTiles = GetSurroundingWallCount(x, y, width, height);
 
-				if (neighbourWallTiles > 4)
+				if (neighbourWallTiles > 5)
 					map[x, y] = 1;
 				else if (neighbourWallTiles < 4)
 					map[x, y] = 0;
