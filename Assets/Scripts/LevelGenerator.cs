@@ -78,6 +78,8 @@ public class LevelGenerator : MonoBehaviour
                 rooms.Add(newRoom);
             }
         }
+
+        
     }
 
     // generates a pathway between leftchild and rightchild of a roomcontainer.
@@ -104,6 +106,7 @@ public class LevelGenerator : MonoBehaviour
         {
             distance = (right_y - left_y) + 2;
         }
+        
 
         Path newPath = new Path(left_x, left_y, distance, roomContainer.isSplitHorizontally);
         paths.Add(newPath);
@@ -112,29 +115,43 @@ public class LevelGenerator : MonoBehaviour
     void GenerateLevel()
     {
         tiles = new GameObject[WIDTH, HEIGHT];
+
+
+        float minX = float.MaxValue;
+        float minY = float.MaxValue;
+        Room startingRoom = null;
         for (int i = 0; i < rooms.Count; i++)
         {
             Room currRoom = rooms[i];
+            if (currRoom.x < minX && currRoom.y < minY)
+            {
+                startingRoom = currRoom;
+                minX = currRoom.x;
+                minY = currRoom.y;
+            }
 
-			int[,] newCave = caveGenerator.GenerateCave(currRoom.width, currRoom.height);
 
+            int[,] newCave = caveGenerator.GenerateCave(currRoom.width, currRoom.height);
             for (int x = currRoom.x; x < currRoom.x + currRoom.width; x++)
             {
                 for (int y = currRoom.y; y < currRoom.y + currRoom.height; y++)
                 {
-
-					GameObject newTile;
-                    if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width -1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null && newCave[x - currRoom.x, y - currRoom.y] == 0)	
+                    if (x  < WIDTH && y < HEIGHT)
                     {
-                        newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-                        tiles[x, y] = newTile;
+                        GameObject newTile;
+                        if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width - 1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null && newCave[x - currRoom.x, y - currRoom.y] == 0)
+                        {
+                            newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                            tiles[x, y] = newTile;
 
+                        }
+                        else if (tiles[x, y] == null)
+                        {
+                            newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                            tiles[x, y] = newTile;
+                        }
                     }
-                    else if (tiles[x,y] == null)
-                    {
-                        newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-                        tiles[x, y] = newTile;
-                    }  
+					 
                 }
             }
         }
@@ -145,30 +162,40 @@ public class LevelGenerator : MonoBehaviour
             {
                 for (int y = path.y; y < path.y + path.height; y++)
                 {
-                    GameObject newTile;
+
                     if ((x != path.x && y != path.y && x != path.x + path.width - 1 && y != path.y + path.height - 1) ||  tiles[x,y] != null)
                     {
-                        newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-
+                        Destroy(tiles[x, y]);
+                        GameObject newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                        tiles[x, y] = newTile;
                     }
-                    else
-                    {
-                        newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-                    }
-
-                    tiles[x, y] = newTile;
-
-                    // GameObject newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-                    // tiles[x, y] = newTile;
                 }
             }
         }
+
+
+        for (int x = 0; x < WIDTH; x++)
+        {
+            for (int y = 0; y < HEIGHT; y++)
+            { 
+                if (tiles[x, y] == null)
+                {
+                    GameObject newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                    tiles[x, y] = newTile;
+                }
+                
+            }
+        }
+        player.transform.position = new Vector3(startingRoom.x + startingRoom.width / 2, startingRoom.y + startingRoom.height / 2, player.transform.position.z);
         
+        
+
+
         AdjustSpritesAndHitboxes();
 
-        PlaceDoor(new Vector2(5, 5), Color.red);
-        PlaceKey(new Vector2(0, 1), Color.red);
-        PlaceKey(new Vector2(0, 5), Color.yellow);
+        //PlaceDoor(new Vector2(5, 5), Color.red);
+        //PlaceKey(new Vector2(0, 1), Color.red);
+        //PlaceKey(new Vector2(0, 5), Color.yellow);
     }
 
     void AdjustSpritesAndHitboxes()
