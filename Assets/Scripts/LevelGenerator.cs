@@ -27,11 +27,17 @@ public class LevelGenerator : MonoBehaviour
     GameObject player;
 	CaveGenerator caveGenerator;
 
-    void Start()
+	[Range(0, 100)]
+	public int randomFillPercent;
+
+	[Range(0, 5)]
+	public int automataIterations;
+
+	void Start()
     {
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
         player = GameObject.Find("Player");
-		caveGenerator = new CaveGenerator(45);
+		caveGenerator = new CaveGenerator(randomFillPercent, automataIterations, groundTile, wallTile);
         GenerateRoomContainers();
         GenerateRooms();
         GenerateLevel();
@@ -57,7 +63,7 @@ public class LevelGenerator : MonoBehaviour
         {
             if (rc.isLastNode)
             {
-                Debug.Log("found last node room container");
+                //Debug.Log("found last node room container");
                 Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
                 rooms.Add(newRoom);
             }
@@ -71,15 +77,16 @@ public class LevelGenerator : MonoBehaviour
         {
             Room currRoom = rooms[i];
 
-            // TODO: Get values of newcave into tiles.
-            // GameObject[,] newCave = caveGenerator.GenerateCave(currRoom.x, currRoom.y, currRoom.width, currRoom.height);
+			//TODO: Get values of newcave into tiles.
+			int[,] newCave = caveGenerator.GenerateCave(currRoom.width, currRoom.height);
 
             for (int x = currRoom.x; x < currRoom.x + currRoom.width; x++)
             {
                 for (int y = currRoom.y; y < currRoom.y + currRoom.height; y++)
                 {
-                    GameObject newTile;
-                    if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width -1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null)
+
+					GameObject newTile;
+                    if (x != currRoom.x && y != currRoom.y && x != currRoom.x + currRoom.width -1 && y != currRoom.y + currRoom.height - 1 && tiles[x, y] == null && newCave[x - currRoom.x, y - currRoom.y] == 0)	
                     {
                         newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
                         
@@ -221,7 +228,7 @@ public class LevelGenerator : MonoBehaviour
         // debugging bois
         public void Print()
         {
-            Debug.Log("RoomContainer Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth + ", isLastNode = " + this.isLastNode);
+           Debug.Log("RoomContainer Values \n x = " + this.x + ", y = " + this.y + ", width = " + this.width + ", height = " + this.height + ", treeDepth = " + this.treeDepth + ", isLastNode = " + this.isLastNode);
         }
 
     }
@@ -245,8 +252,6 @@ public class LevelGenerator : MonoBehaviour
             this.y = container_y + topPadding;
             this.width = Mathf.Max(container_w - (leftPadding + rightPadding), MIN_ROOM_WIDTH);
             this.height = Mathf.Max(container_h - (topPadding + bottomPadding), MIN_ROOM_HEIGHT);
-
-            this.Print();
         }
 
         public int RandomPadding(int length)

@@ -8,31 +8,34 @@ public class CaveGenerator : MonoBehaviour
 	public GameObject wallTile;
 
 	int randomFillPercent;
+	int iterations;
 
 	string seed;
 	int[,] map;
 
 	GameObject player;
 
-	public CaveGenerator(int randomFillPercent)
+	public CaveGenerator(int randomFillPercent, int iterations, GameObject groundTile, GameObject wallTile)
 	{
+		this.groundTile = groundTile;
+		this.wallTile = wallTile;
 		player = GameObject.Find("Player");
 		this.randomFillPercent = randomFillPercent;
+		this.iterations = iterations;
 	}
 
-	public GameObject[,] GenerateCave(int locationX, int locationY, int width, int height)
+	public int[,] GenerateCave(int width, int height)
 	{
 		map = new int[width, height];
 		RandomFillMap(width, height);
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < iterations; i++)
 		{
 			SmoothMap(width, height);
 		}
 
-		GameObject[,] tiles = CreateTiles(locationX, locationY, width, height);
 
-		return tiles;
+		return map;
 	}
 
 	private void RandomFillMap(int width, int height)
@@ -95,33 +98,5 @@ public class CaveGenerator : MonoBehaviour
 			}
 		}
 		return wallCount;
-	}
-
-
-	private GameObject[,] CreateTiles(int locationX, int locationY, int width, int height)
-	{
-		GameObject[,] tiles = new GameObject[width, height];
-		for (int x = 0; x < width; x++)
-		{
-			for (int y = 0; y < height; y++)
-			{
-				GameObject newTile;
-				if (map[x, y] == 1)
-					newTile = Instantiate(wallTile, new Vector3(x * 1f + locationX, y * 1f + locationY, 0), Quaternion.identity) as GameObject;
-				else
-					newTile = Instantiate(groundTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
-
-				if (newTile.tag == "Block")
-				{
-					WallTile wallScript = newTile.GetComponent<WallTile>();
-					wallScript.player = player;
-					wallScript.AdjustSpriteAndHitbox(tiles, new Vector2(x, y));
-				}
-
-				tiles[x, y] = newTile;
-			}
-		}
-
-		return tiles;
 	}
 }
