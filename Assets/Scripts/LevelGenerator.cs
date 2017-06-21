@@ -11,15 +11,15 @@ public class LevelGenerator : MonoBehaviour
     public const int WIDTH = 80;
     public const int HEIGHT = 80;
     public const int MAX_TREE_DEPTH = 4;
-    public const float MIN_SPLIT_PERCENTAGE = 0.3f;
+    public const float MIN_SPLIT_PERCENTAGE = 0.4f;
     public const float MAX_SPLIT_PERCENTAGE = 1f - MIN_SPLIT_PERCENTAGE;
     public const float STOP_SPLITTING_CHANCE = 0.4f;
 
     public List<Room> rooms = new List<Room>();
-    public const float MIN_ROOM_PADDING = 0.05f;
-    public const float MAX_ROOM_PADDING = 0.15f;
-    public const int MIN_ROOM_WIDTH = 9;
-    public const int MIN_ROOM_HEIGHT = 9;
+    public const float MIN_ROOM_PADDING = 0.075f;
+    public const float MAX_ROOM_PADDING = 0.175f;
+    public const int MIN_ROOM_WIDTH = 7;
+    public const int MIN_ROOM_HEIGHT = 7;
 
 
     public Dictionary<string, Path> pathDict = new Dictionary<string, Path>();
@@ -119,42 +119,79 @@ public class LevelGenerator : MonoBehaviour
     // this method will only be called after checking if the roomcontainer has l_ & r_child.
     void GeneratePath(RoomContainer roomContainer)
     {
-        int left_x = 0;
-        int left_y = 0;
-        int right_x = 0;
-        int right_y = 0;
-
-        left_x = roomContainer.l_child.center[0];
-        left_y = roomContainer.l_child.center[1];
-        right_x = roomContainer.r_child.center[0];
-        right_y = roomContainer.r_child.center[1];
+        int left_x = roomContainer.l_child.center[0];
+        int left_y = roomContainer.l_child.center[1];
+        int right_x = roomContainer.r_child.center[0];
+        int right_y = roomContainer.r_child.center[1];
 
         int distance = 0;
 
         if (roomContainer.isSplitHorizontally)
         {
-            distance = (right_x - left_x) + 2;
+            distance = (right_x - left_x);
         }
         else
         {
-            distance = (right_y - left_y) + 2;
+            distance = (right_y - left_y);
         }
 
-        
-
         Path newPath = new Path(left_x, left_y, distance, roomContainer.isSplitHorizontally);
-        paths.Add(newPath);
-
-        string pathID1 = roomContainer.l_child.id + "-" + roomContainer.r_child.id;
-        string pathID2 = roomContainer.r_child.id + "-" + roomContainer.l_child.id;
-        if (!pathDict.ContainsKey(pathID1))
-            pathDict.Add(pathID1, newPath);
-        if (!pathDict.ContainsKey(pathID2))
-            pathDict.Add(pathID2, newPath);
-
 
         List<RoomContainer> finalNodes = roomContainer.FindFinalNodesOnPath();
-        newPath.FillRoomNeighboursAfterPathCreation(finalNodes, pathDict);
+
+       
+        finalNodes = newPath.RemoveContainersWithRoomsNotOnPath(finalNodes);
+        bool twoRooms = true;
+        // move path so it covers multiple rooms.
+        if (finalNodes.Count < 2)
+        {
+            twoRooms = false;
+        }
+
+        while (!twoRooms)
+        {
+            if (newPath.isHorizontal)
+            {
+                newPath.y += 3;
+            }
+            else
+            {
+                newPath.x += 3;
+            }
+
+            finalNodes = roomContainer.FindFinalNodesOnPath();
+            finalNodes = newPath.RemoveContainersWithRoomsNotOnPath(finalNodes);
+
+            if (finalNodes.Count < 2)
+            {
+                twoRooms = false;
+            }
+            else
+            {
+                twoRooms = true;
+            }
+        }
+
+        // resize path if it covers multiple rooms.
+        if (finalNodes.Count > 2)
+        {
+            finalNodes = newPath.GetTwoClosestContainers(finalNodes);
+            newPath.PlaceBetweenContainers(finalNodes);
+        }
+
+        paths.Add(newPath);
+
+        if (finalNodes.Count == 2)
+        {
+            string pathID1 = finalNodes[0].id + "-" + finalNodes[1].id;
+            string pathID2 = finalNodes[1].id + "-" + finalNodes[0].id;
+            if (!pathDict.ContainsKey(pathID1))
+                pathDict.Add(pathID1, newPath);
+            if (!pathDict.ContainsKey(pathID2))
+                pathDict.Add(pathID2, newPath);
+
+            newPath.FillRoomNeighboursAfterPathCreation(finalNodes, pathDict);
+        }
     }
 
     void GenerateLevel()
@@ -599,18 +636,37 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
+        public void PlaceBetweenContainers(List<RoomContainer> roomContainers)
+        {
+
+            int left_x = roomContainers[0].center[0];
+            int left_y = roomContainers[0].center[1];
+            int right_x = roomContainers[1].center[0];
+            int right_y = roomContainers[1].center[1];
+
+            this.x = left_x;
+            this.y = left_y;
+
+            int distance = 0;
+
+            if (this.isHorizontal)
+            {
+                distance = (right_x - left_x) + 2;
+                this.width = distance;
+            }
+            else
+            {
+                distance = (right_y - left_y) + 2;
+                this.height = distance;
+            }
+        }
+
         public void FillRoomNeighboursAfterPathCreation(List<RoomContainer> finalNodes, Dictionary<string, Path> _pathDict)
         {
             // TODO: Sometimes a path doesn't intersect multiple rooms and keeps going until it reaches another path.
             // In that case, neighbours don't get added correctly because the connected RoomContainer will be removed in this step:
-            finalNodes = this.RemoveContainersWithRoomsNotOnPath(finalNodes);
 
-            if (finalNodes.Count > 2)
-            {
-                finalNodes = GetTwoClosestContainers(finalNodes);
-            }
-
-            if (finalNodes.Count > 1)
+            if (finalNodes.Count == 2)
             {
                 RoomContainer rc1 = finalNodes[0];
                 RoomContainer rc2 = finalNodes[1];
