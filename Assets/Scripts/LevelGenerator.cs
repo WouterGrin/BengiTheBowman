@@ -302,22 +302,31 @@ public class LevelGenerator : MonoBehaviour
         }
         Room currentRoom = startingRoom;
         List<string> iterateList = AddPathsToList(startingRoom, null, visitedRooms);
-        int t = 0;
-        while (iterateList.Count > 0 && t < 100)
+        while (iterateList.Count > 0)
         {
-            t++;
+            //place key in currentroom
             Color pickedColor = PlaceKeyAtRandomLocationInRoom(currentRoom);
+
+            //choose a random path from possible path list
             int randomPathIndex = Random.Range(0, iterateList.Count);
             string pickedPath = iterateList[randomPathIndex];
             Path chosenPath = pathDict[pickedPath];
+
+            //place door in path with same color as key
             PlaceDoorInPath(chosenPath, pickedColor);
+
+            //room is visited and should no longer be added to the list
             visitedRooms[currentRoom.id.ToString()] = true;
+
+            //go through chosen path to next room
             currentRoom = GoThroughPath(currentRoom, pickedPath);
+
+            //remove the path from the list
             iterateList.Remove(pickedPath);
+
+            //add new paths from the just entered room
             iterateList = AddPathsToList(currentRoom, iterateList, visitedRooms);
         }
-        
-        
     }
 
     Room GoThroughPath(Room currentRoom, string pathString)
@@ -327,7 +336,6 @@ public class LevelGenerator : MonoBehaviour
         Room destination = roomDict[splitChars[1]];
         return destination;
     }
-
     List<string> AddPathsToList(Room room, List<string> pathList, Dictionary<string, bool> _visitedRooms)
     {
         if (pathList == null)
@@ -335,7 +343,6 @@ public class LevelGenerator : MonoBehaviour
         for (int i = 0; i < room.neighbours.Count; i++)
         {
             Room currRoom = room.neighbours[i]; 
-
             if (!_visitedRooms[currRoom.id.ToString()])
             {
                 string pathID = room.id.ToString() + "-" + currRoom.id.ToString();
@@ -344,9 +351,6 @@ public class LevelGenerator : MonoBehaviour
         }
         return pathList;
     }
-
-
-
 
     void PlaceDoorInPath(Path path, Color color)
     {
