@@ -24,7 +24,7 @@ public class LockedDoorScript : MonoBehaviour
         if (player != null)
         {
             float distanceToPlayer = Vector2.Distance(transform.position, player.transform.position);
-            if (distanceToPlayer <= 1f && PlayerHasKey())
+            if (distanceToPlayer <= 1.5f && PlayerHasKey())
             {
                 Unlock();
             }

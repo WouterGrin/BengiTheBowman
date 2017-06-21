@@ -20,7 +20,7 @@ public class PlayerHandler : MonoBehaviour
     
 
     const float MOVE_SPEED = 5f;
-    const float DASH_SPEED = 46f;
+    const float DASH_SPEED = 32f;
 
     bool keyPressed;
     bool upPressed;

@@ -37,6 +37,7 @@ public class LevelGenerator : MonoBehaviour
     public GameObject wallTile;
     public GameObject doorPrefab;
     public GameObject keyPrefab;
+    public GameObject enemyPrefab;
     GameObject player;
 	CaveGenerator caveGenerator;
 
@@ -275,10 +276,9 @@ public class LevelGenerator : MonoBehaviour
 
         PlaceDoorsAndKeys(startingRoom);
 
-
-
         AdjustSpritesAndHitboxes();
 
+        PopulateRooms(startingRoom);
         //PlaceDoor(new Vector2(5, 5), Color.red);
         //PlaceKey(new Vector2(0, 1), Color.red);
         //PlaceKey(new Vector2(0, 5), Color.yellow);
@@ -424,6 +424,7 @@ public class LevelGenerator : MonoBehaviour
     void PlaceDoor(Vector2 pos, Color color)
     {
         GameObject newDoor = Instantiate(doorPrefab, pos, Quaternion.identity) as GameObject;
+        print(pos);
         LockedDoorScript doorScript = newDoor.GetComponent<LockedDoorScript>();
         doorScript.player = player;
         doorScript.SetColor(color);
@@ -439,6 +440,42 @@ public class LevelGenerator : MonoBehaviour
         keyScript.SetColor(color);
 		// keyScript.AdjustSprite(tiles, pos);
 	}
+
+    void PlaceSkeleton(Vector2 pos, Room room)
+    {
+        GameObject newSkeleton = Instantiate(enemyPrefab, pos, Quaternion.identity) as GameObject;
+        Skeleton skelScript = newSkeleton.GetComponent<Skeleton>();
+        skelScript.player = player;
+        skelScript.triggerRoom = room;
+    }
+
+    void PopulateRooms(Room startingRoom)
+    {
+        print(rooms.Count);
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            Room currRoom = rooms[i];
+            if (currRoom.id != startingRoom.id)
+            {
+                float distanceToStartRoom = Vector2.Distance(new Vector2(currRoom.x, currRoom.y), new Vector2(startingRoom.x, startingRoom.y));
+                print(distanceToStartRoom);
+                for (int j = 0; j < distanceToStartRoom; j++)
+                {
+                    int randomPosX = Random.Range(currRoom.x, currRoom.x + currRoom.width);
+                    int randomPosY = Random.Range(currRoom.y, currRoom.y + currRoom.height);
+
+                    if (tiles[randomPosX, randomPosY].tag != "Block")
+                    {
+                        PlaceSkeleton(new Vector2(randomPosX, randomPosY), currRoom);
+                    }
+
+                   
+                }
+            }
+        }
+    }
+
+    
 
 	public class RoomContainer
     {
