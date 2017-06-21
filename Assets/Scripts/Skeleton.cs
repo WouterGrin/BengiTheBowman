@@ -4,12 +4,14 @@ using System.Collections.Generic;
 
 public class Skeleton : Enemy
 {
-    GameObject player;
+    public GameObject player;
     ObjectContainer objContainer;
     List<Vector3> feetPos = new List<Vector3>();
     SpriteRenderer renderer;
     Rigidbody rigidbody;
-    
+
+    public const int SPEED = 40;
+    public LevelGenerator.Room triggerRoom;
     public bool followPlayer;
     public float followRange;
     public bool canDealDamage;
@@ -21,7 +23,6 @@ public class Skeleton : Enemy
     {
         base.Start();
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
-        player = GameObject.Find("Player");
 
         touchRadius = 0.5f;
 
@@ -70,30 +71,37 @@ public class Skeleton : Enemy
     protected override void Update()
     {
         base.Update();
-
-        if (transform.position.y > player.transform.position.y)
-        {
-            renderer.sortingOrder = 0;
-        }  
-        else
-        {
-            renderer.sortingOrder = 2;
-        }
-
         if (followPlayer)
         {
-            float distanceToPlayer = Vector2.Distance(transform.position, player.transform.position);
-            if (distanceToPlayer <= followRange || isOnFollow)
+            //float distanceToPlayer = Vector2.Distance(transform.position, player.transform.position);
+            //if (distanceToPlayer <= followRange || isOnFollow)
+            //{
+                
+            var direction = Vector3.zero;
+
+            if (player.transform.position.x > triggerRoom.x &&
+                player.transform.position.y > triggerRoom.y &&
+                player.transform.position.x < triggerRoom.x + triggerRoom.width &&
+                player.transform.position.y < triggerRoom.y + triggerRoom.height)
             {
                 isOnFollow = true;
-                var direction = Vector3.zero;
+               
+            }
+
+            if (isOnFollow)
+            {
+                direction = player.transform.position - transform.position;
+                rigidbody.AddRelativeForce(direction.normalized * SPEED, ForceMode.Force);
+            }
+
+                /*
                 if (Vector3.Distance(transform.position, player.transform.position) > 0.1f)
                 {
                     
-                    direction = player.transform.position - transform.position;
-                    rigidbody.AddRelativeForce(direction.normalized * 20, ForceMode.Force);
+                   
                 }
-            }
+                */
+           // }
             
         }
         
