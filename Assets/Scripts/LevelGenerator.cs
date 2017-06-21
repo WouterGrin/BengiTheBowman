@@ -468,7 +468,7 @@ public class LevelGenerator : MonoBehaviour
             {
                 float distanceToStartRoom = Vector2.Distance(new Vector2(currRoom.x, currRoom.y), new Vector2(startingRoom.x, startingRoom.y));
                 print(distanceToStartRoom);
-                for (int j = 0; j < distanceToStartRoom; j++)
+                for (int j = 0; j < distanceToStartRoom/10; j++)
                 {
                     int randomPosX = Random.Range(currRoom.x, currRoom.x + currRoom.width);
                     int randomPosY = Random.Range(currRoom.y, currRoom.y + currRoom.height);
