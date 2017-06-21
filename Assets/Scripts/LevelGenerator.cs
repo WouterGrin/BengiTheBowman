@@ -148,15 +148,24 @@ public class LevelGenerator : MonoBehaviour
             twoRooms = false;
         }
 
+        int rand = (Random.Range(-1, 1));
+        if (rand < 0)
+        {
+            rand = -1;
+        }
+        else
+        {
+            rand = 1;
+        }
         while (!twoRooms)
         {
             if (newPath.isHorizontal)
             {
-                newPath.y += 3;
+                newPath.y += 3 * rand;
             }
             else
             {
-                newPath.x += 3;
+                newPath.x += 3 * rand;
             }
 
             finalNodes = roomContainer.FindFinalNodesOnPath();
