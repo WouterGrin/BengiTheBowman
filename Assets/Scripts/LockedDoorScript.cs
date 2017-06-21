@@ -24,7 +24,7 @@ public class LockedDoorScript : MonoBehaviour
         if (player != null)
         {
             float distanceToPlayer = Vector2.Distance(transform.position, player.transform.position);
-            if (distanceToPlayer <= 0.5f && PlayerHasKey())
+            if (distanceToPlayer <= 1f && PlayerHasKey())
             {
                 Unlock();
             }
@@ -42,7 +42,9 @@ public class LockedDoorScript : MonoBehaviour
         PlayerHandler playerScript = player.GetComponent<PlayerHandler>();
         for (int i = 0; i < playerScript.keys.Count; i++)
         {
+            
             Color currColor = playerScript.keys[i];
+            print(currColor.r + " " + currColor.g + " " + currColor.b);
             if (currColor.Equals(color))
                 return true;
         }
@@ -84,9 +86,11 @@ public class LockedDoorScript : MonoBehaviour
 
         }
         */
-        if (rightTile != null && rightTile.tag == "Block" && leftTile != null && leftTile.tag == "Block")
+        
+        if (lowerTile != null && lowerTile.tag == "Block" && upperTile != null && upperTile.tag == "Block")
         {
             GetComponent<SpriteRenderer>().sprite = otherSprite;
+            GetComponent<BoxCollider>().size = new Vector3(GetComponent<BoxCollider>().size.x, 3, GetComponent<BoxCollider>().size.z);
         }
     }
 }

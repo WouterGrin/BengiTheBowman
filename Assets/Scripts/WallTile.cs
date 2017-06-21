@@ -9,6 +9,8 @@ public class WallTile : MonoBehaviour {
     SpriteRenderer renderer;
     GameObject lowerTile;
     GameObject upperTile;
+
+    public int roomID;
     void Awake () {
         renderer = GetComponent<SpriteRenderer>();
     }

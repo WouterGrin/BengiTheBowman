@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class LevelGenerator : MonoBehaviour
 {
+    public static int IDCounter = 0;
+
     public List<RoomContainer> roomContainers = new List<RoomContainer>();
     public const int WIDTH = 80;
     public const int HEIGHT = 80;
@@ -18,6 +20,12 @@ public class LevelGenerator : MonoBehaviour
     public const float MAX_ROOM_PADDING = 0.15f;
     public const int MIN_ROOM_WIDTH = 9;
     public const int MIN_ROOM_HEIGHT = 9;
+
+
+    public Dictionary<string, Path> pathDict = new Dictionary<string, Path>();
+    public Dictionary<string, Room> roomDict = new Dictionary<string, Room>();
+    public List<Color> knownColors = new List<Color>();
+
 
     public List<Path> paths = new List<Path>();
     public const int PATH_WIDTH = 3;
@@ -40,6 +48,24 @@ public class LevelGenerator : MonoBehaviour
 
 	void Start()
     {
+        knownColors.Add(Color.yellow);
+        knownColors.Add(Color.black);
+        knownColors.Add(Color.blue);
+        knownColors.Add(Color.cyan);
+        knownColors.Add(Color.gray);
+        knownColors.Add(Color.green);
+        knownColors.Add(Color.magenta);
+        knownColors.Add(Color.red);
+        knownColors.Add(Color.white);
+        //???? idunno maine
+        knownColors.Add(new Color(0.2f, 0.1f, 0.6f));
+        knownColors.Add(new Color(0.6f, 0.2f, 0.1f));
+        knownColors.Add(new Color(0.2f, 0.6f, 0.1f));
+        knownColors.Add(new Color(0.2f, 0.9f, 0.5f));
+        knownColors.Add(new Color(0.2f, 0.5f, 0.9f));
+        knownColors.Add(new Color(0.5f, 0.9f, 0.2f));
+
+
         objContainer = GameObject.Find("ObjectContainer").GetComponent<ObjectContainer>();
         player = GameObject.Find("Player");
 		caveGenerator = new CaveGenerator(randomFillPercent, automataIterations, groundTile, wallTile);
@@ -69,8 +95,10 @@ public class LevelGenerator : MonoBehaviour
             if (rc.isLastNode)
             {
                 Room newRoom = new Room(rc.x, rc.y, rc.width, rc.height);
+                newRoom.id = rc.id;
                 rooms.Add(newRoom);
                 rc.room = newRoom;
+                roomDict.Add(newRoom.id.ToString(), newRoom);
             }
         }
         foreach (RoomContainer rc in roomContainers)
@@ -111,13 +139,22 @@ public class LevelGenerator : MonoBehaviour
         {
             distance = (right_y - left_y) + 2;
         }
+
         
 
         Path newPath = new Path(left_x, left_y, distance, roomContainer.isSplitHorizontally);
         paths.Add(newPath);
 
+        string pathID1 = roomContainer.l_child.id + "-" + roomContainer.r_child.id;
+        string pathID2 = roomContainer.r_child.id + "-" + roomContainer.l_child.id;
+        if (!pathDict.ContainsKey(pathID1))
+            pathDict.Add(pathID1, newPath);
+        if (!pathDict.ContainsKey(pathID2))
+            pathDict.Add(pathID2, newPath);
+
+
         List<RoomContainer> finalNodes = roomContainer.FindFinalNodesOnPath();
-        newPath.FillRoomNeighboursAfterPathCreation(finalNodes);
+        newPath.FillRoomNeighboursAfterPathCreation(finalNodes, pathDict);
     }
 
     void GenerateLevel()
@@ -156,6 +193,7 @@ public class LevelGenerator : MonoBehaviour
                         else if (tiles[x, y] == null)
                         {
                             newTile = Instantiate(wallTile, new Vector3(x * 1f, y * 1f, 0), Quaternion.identity) as GameObject;
+                            newTile.GetComponent<WallTile>().roomID = currRoom.id;
                             tiles[x, y] = newTile;
                         }
                     }
@@ -195,8 +233,11 @@ public class LevelGenerator : MonoBehaviour
             }
         }
         player.transform.position = new Vector3(startingRoom.x + startingRoom.width / 2, startingRoom.y + startingRoom.height / 2, player.transform.position.z);
-        
-        
+
+
+
+        PlaceDoorsAndKeys(startingRoom);
+
 
 
         AdjustSpritesAndHitboxes();
@@ -204,6 +245,104 @@ public class LevelGenerator : MonoBehaviour
         //PlaceDoor(new Vector2(5, 5), Color.red);
         //PlaceKey(new Vector2(0, 1), Color.red);
         //PlaceKey(new Vector2(0, 5), Color.yellow);
+    }
+
+    void PlaceDoorsAndKeys(Room startingRoom)
+    {
+        Dictionary<string, bool> visitedRooms = new Dictionary<string, bool>();
+        foreach (KeyValuePair<string, Room> entry in roomDict)
+        {
+            visitedRooms.Add(entry.Value.id.ToString(), false);
+        }
+        Room currentRoom = startingRoom;
+        List<string> iterateList = AddPathsToList(startingRoom, null, visitedRooms);
+        int t = 0;
+        while (iterateList.Count > 0 && t < 100)
+        {
+            t++;
+            Color pickedColor = PlaceKeyAtRandomLocationInRoom(currentRoom);
+            int randomPathIndex = Random.Range(0, iterateList.Count);
+            string pickedPath = iterateList[randomPathIndex];
+            Path chosenPath = pathDict[pickedPath];
+            PlaceDoorInPath(chosenPath, pickedColor);
+            visitedRooms[currentRoom.id.ToString()] = true;
+            currentRoom = GoThroughPath(currentRoom, pickedPath);
+            iterateList.Remove(pickedPath);
+            iterateList = AddPathsToList(currentRoom, iterateList, visitedRooms);
+        }
+        
+        
+    }
+
+    Room GoThroughPath(Room currentRoom, string pathString)
+    {
+        char[] delimiter = new char[1] {'-'};
+        string[] splitChars = pathString.Split(delimiter);
+        Room destination = roomDict[splitChars[1]];
+        return destination;
+    }
+
+    List<string> AddPathsToList(Room room, List<string> pathList, Dictionary<string, bool> _visitedRooms)
+    {
+        if (pathList == null)
+            pathList = new List<string>();
+        for (int i = 0; i < room.neighbours.Count; i++)
+        {
+            Room currRoom = room.neighbours[i]; 
+
+            if (!_visitedRooms[currRoom.id.ToString()])
+            {
+                string pathID = room.id.ToString() + "-" + currRoom.id.ToString();
+                pathList.Add(pathID);
+            }
+        }
+        return pathList;
+    }
+
+
+
+
+    void PlaceDoorInPath(Path path, Color color)
+    {
+        bool foundTile = false;
+        Vector2 foundTilePos = Vector2.zero;
+        int skipTilesX = 0;
+        int skipTilesY = 0;
+        if (path.width > path.height)
+            skipTilesX = (int)(path.width * 0.2f);
+        if (path.height > path.width)
+            skipTilesY = (int)(path.height * 0.2f);
+        for (int x = path.x + skipTilesX; x < path.x + path.width && !foundTile; x++)
+        {
+            for (int y = path.y + skipTilesY; y < path.y + path.height && !foundTile; y++)
+            {
+                if (path.height > path.width)
+                {
+                    GameObject leftTile = tiles[x - 1, y];
+                    GameObject rightTile = tiles[x + 1, y];
+                    if (leftTile.tag == "Block" && rightTile.tag == "Block")
+                    {
+                        foundTile = true;
+                        foundTilePos = new Vector2(x, y);
+                    }
+                }
+                else
+                {
+                    GameObject upperTile = tiles[x, y + 1];
+                    GameObject lowerTile = tiles[x, y - 1];
+                    if (upperTile.tag == "Block" && lowerTile.tag == "Block")
+                    {
+                        foundTile = true;
+                        foundTilePos = new Vector2(x, y);
+                    }
+                }
+            }
+        }
+        if (foundTile)
+        {
+            PlaceDoor(foundTilePos, color);
+        }
+
     }
 
     void AdjustSpritesAndHitboxes()
@@ -223,14 +362,35 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
+    Color PlaceKeyAtRandomLocationInRoom(Room room)
+    {
+        Color ranColor = new Color(0, 0, 0, 0);
+        int iterationNr = 0;
+        while (iterationNr < 1000)
+        {
+            iterationNr++;
+            int randomPosX = Random.Range(room.x, room.x + room.width);
+            int randomPosY = Random.Range(room.y, room.y + room.height);
+            if (tiles[randomPosX, randomPosY].tag != "Block")
+            {
+                int colorIndex = Random.Range(0, knownColors.Count);
+                ranColor = knownColors[colorIndex];
+                knownColors.Remove(ranColor);
+                PlaceKey(new Vector2(randomPosX, randomPosY), ranColor);
+                break;
+            }
+        }
+       
+        return ranColor;
+    }
+
     void PlaceDoor(Vector2 pos, Color color)
     {
         GameObject newDoor = Instantiate(doorPrefab, pos, Quaternion.identity) as GameObject;
         LockedDoorScript doorScript = newDoor.GetComponent<LockedDoorScript>();
         doorScript.player = player;
         doorScript.SetColor(color);
-
-       // doorScript.AdjustSprite(tiles, pos);
+        doorScript.AdjustSprite(tiles, pos);
     }
 
 
@@ -246,6 +406,7 @@ public class LevelGenerator : MonoBehaviour
 	public class RoomContainer
     {
         // (x, y) indicates top left corner
+        public int id;
         public int x;
         public int y;
         public int width;
@@ -265,6 +426,8 @@ public class LevelGenerator : MonoBehaviour
 
         public RoomContainer(int x, int y, int width, int height, int treeDepth, List<RoomContainer> roomContainers)
         {
+            this.id = LevelGenerator.IDCounter;
+            LevelGenerator.IDCounter++;
             this.x = x;
             this.y = y;
             this.width = width;
@@ -362,6 +525,7 @@ public class LevelGenerator : MonoBehaviour
     public class Room
     {
         // (x, y) indicates top left corner
+        public int id;
         public int x;
         public int y;
         public int width;
@@ -435,7 +599,7 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        public void FillRoomNeighboursAfterPathCreation(List<RoomContainer> finalNodes)
+        public void FillRoomNeighboursAfterPathCreation(List<RoomContainer> finalNodes, Dictionary<string, Path> _pathDict)
         {
             // TODO: Sometimes a path doesn't intersect multiple rooms and keeps going until it reaches another path.
             // In that case, neighbours don't get added correctly because the connected RoomContainer will be removed in this step:
@@ -453,6 +617,12 @@ public class LevelGenerator : MonoBehaviour
 
                 rc1.room.neighbours.Add(rc2.room);
                 rc2.room.neighbours.Add(rc1.room);
+
+                if (!_pathDict.ContainsKey(rc1.id + "-" + rc2.id))
+                    _pathDict.Add(rc1.id + "-" + rc2.id, this);
+
+                if (!_pathDict.ContainsKey(rc2.id + "-" + rc1.id))
+                    _pathDict.Add(rc2.id + "-" + rc1.id, this);
             }
         }
 
